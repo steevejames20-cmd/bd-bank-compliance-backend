@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: bd-bank-compliance-backend
+
+  # Connexion à la base de test locale, qui représente la bd_bank en dev.
+  # Valeurs lues depuis les variables d'environnement (.env, jamais en dur).
+  # Le compte utilisé ici sera remplacé en J2 par le compte SQL dédié en
+  # lecture seule (SELECT uniquement).
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:bd_bank_test}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USER:bdbank_readonly}
+    password: ${DB_PASSWORD:change_me}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    root: INFO
+    com.bridge.bdbank: DEBUG

@@ -49,7 +49,8 @@ INSERT INTO transactions (compte_id, montant, type, date_operation) VALUES
     (3, 0.00, 'DEPOT', '2026-07-28 11:00:00');
 
 -- Note sécurité (cf. docs/schema-fonctionnement.md, volet 6) :
--- l'utilisateur MYSQL_USER créé par docker-compose a des droits complets
--- sur cette base pour permettre le seed ci-dessus. Le compte technique
--- dédié, strictement en lecture seule (SELECT), sera créé en J2 et c'est
--- CELUI-LÀ que l'application devra utiliser en pratique.
+-- ce script tourne avec les droits root (comportement par défaut de
+-- l'image MySQL pour les fichiers .sql d'init) afin de pouvoir créer les
+-- tables et insérer les données de seed. L'application, elle, n'utilise
+-- JAMAIS ce compte : voir 002_create_readonly_user.sh pour le compte
+-- technique dédié, strictement en lecture seule (SELECT uniquement).

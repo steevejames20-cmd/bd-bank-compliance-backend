@@ -40,6 +40,37 @@ dans le dossier [`docs/`](./docs) (ajouté sur la branche `jour-01-init-projet`)
 > (SELECT uniquement), tel que décrit dans `docs/schema-fonctionnement.md`,
 > sera mis en place en J2.
 
+## J2 — Compte lecture seule + couche de connexion JDBC
+
+Le compte applicatif est maintenant réellement en lecture seule (`GRANT
+SELECT` explicite dans `db/init/002_create_readonly_user.sh`), et une
+couche `JdbcConnectionService` générique (MySQL/PostgreSQL) vérifie la
+connexion au démarrage.
+
+1. Réinitialiser la base de test pour que les nouveaux scripts d'init
+   s'exécutent (ils ne tournent qu'au premier démarrage d'un volume vide) :
+   ```bash
+   docker compose down -v
+   docker compose up -d
+   ```
+2. Vérifier que le compte est bien restreint au SELECT :
+   ```bash
+   # OK
+   docker exec -it bd-bank-test-db mysql -u bdbank_readonly -p"change_me" bd_bank_test -e "SELECT * FROM clients;"
+
+   # Doit être refusé (ERROR 1142 : INSERT command denied)
+   docker exec -it bd-bank-test-db mysql -u bdbank_readonly -p"change_me" bd_bank_test -e "INSERT INTO clients (nom, email) VALUES ('test','test@test.com');"
+   ```
+3. Lancer l'app et vérifier dans les logs la ligne `Connexion bd_bank OK -> MySQL ...` :
+   ```bash
+   set -a; source .env; set +a
+   mvn spring-boot:run
+   ```
+4. Lancer les tests (nécessite la base de test démarrée) :
+   ```bash
+   mvn test
+   ```
+
 ## Workflow Git
 
 Une branche par journée de travail de la roadmap, nommée `jour-XX-slug`

@@ -1,0 +1,30 @@
+# === Environnement / secrets ===
+.env
+.env.*
+!.env.example
+
+# === Maven / Java ===
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# === IDE ===
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+out/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+*.log
+logs/
+
+# === Données locales de la base de test (volumes Docker éventuels) ===
+mysql-data/

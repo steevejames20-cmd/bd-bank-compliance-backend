@@ -11,6 +11,10 @@ dans le dossier [`docs/`](./docs) (ajouté sur la branche `jour-01-init-projet`)
 
 ## Démarrage local (J1)
 
+> **Sous Windows (PowerShell)** : partout où tu vois `set -a; source .env; set +a`
+> (syntaxe bash), utilise à la place `.\scripts\load-env.ps1`. Le reste des
+> commandes (`docker`, `mvn`, `git`) est identique.
+
 1. Copier `.env.example` en `.env` et ajuster les valeurs si besoin :
    ```bash
    cp .env.example .env

@@ -1,0 +1,23 @@
+services:
+  bd-bank-test-db:
+    image: mysql:8.4
+    container_name: bd-bank-test-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_change_me}
+      MYSQL_DATABASE: ${DB_NAME:-bd_bank_test}
+      MYSQL_USER: ${DB_USER:-bdbank_readonly}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-change_me}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql-data:

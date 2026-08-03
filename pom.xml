@@ -41,6 +41,20 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!--
+            Driver PostgreSQL : ajouté dès maintenant pour la compatibilité
+            multi-SGBD exigée en v1 (docs/schema-fonctionnement.md, §5),
+            même si la base de test actuelle est MySQL. Le code de
+            connexion (JdbcConnectionService) ne dépend d'aucun des deux
+            drivers : seule la config (application.yml) choisit lequel
+            est utilisé.
+        -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Validation des payloads (utile dès les DTO de règles/scope) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

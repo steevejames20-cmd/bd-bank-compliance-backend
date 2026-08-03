@@ -4,13 +4,16 @@ spring:
 
   # Connexion à la base de test locale, qui représente la bd_bank en dev.
   # Valeurs lues depuis les variables d'environnement (.env, jamais en dur).
-  # Le compte utilisé ici sera remplacé en J2 par le compte SQL dédié en
-  # lecture seule (SELECT uniquement).
+  # Le compte utilisé est le compte technique dédié en lecture seule
+  # (voir db/init/002_create_readonly_user.sh).
+  #
+  # Pas de "driver-class-name" ici volontairement : Spring Boot déduit le
+  # bon driver depuis le préfixe de l'URL (jdbc:mysql: / jdbc:postgresql:),
+  # ce qui garde la config (et le code) agnostique du SGBD.
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:bd_bank_test}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${DB_USER:bdbank_readonly}
     password: ${DB_PASSWORD:change_me}
-    driver-class-name: com.mysql.cj.jdbc.Driver
 
 server:
   port: ${SERVER_PORT:8080}

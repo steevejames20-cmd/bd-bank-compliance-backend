@@ -6,8 +6,13 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_change_me}
       MYSQL_DATABASE: ${DB_NAME:-bd_bank_test}
-      MYSQL_USER: ${DB_USER:-bdbank_readonly}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-change_me}
+      # Volontairement PAS de MYSQL_USER / MYSQL_PASSWORD ici : ces variables
+      # spéciales de l'image MySQL créent automatiquement un compte avec
+      # ALL PRIVILEGES, ce qui contredit l'exigence "lecture seule".
+      # Le vrai compte applicatif est créé explicitement par
+      # db/init/002_create_readonly_user.sh avec un GRANT SELECT uniquement.
+      APP_DB_USER: ${DB_USER:-bdbank_readonly}
+      APP_DB_PASSWORD: ${DB_PASSWORD:-change_me}
     ports:
       - "${DB_PORT:-3306}:3306"
     volumes:

@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.4</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
 
@@ -18,13 +18,12 @@
     <description>Outil de vérification de conformité des données - Bridge bd_bank</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <!--
-            Spring Boot 3.3.4 (sept. 2024) impose par défaut une version de
-            Lombok antérieure à la sortie du JDK 25, ce qui casse la
-            compilation (ExceptionInInitializerError sur TypeTag) si le poste
-            de dev a un JDK 25 installé. On force donc explicitement une
-            version de Lombok avec un support JDK 25 confirmé.
+            Spring Boot 3.5.x et les JDK récents demandent une version de
+            Lombok compatible avec les compilateurs modernes. On force
+            explicitement une version récente pour éviter les erreurs de
+            compilation sur Java 25.
         -->
         <lombok.version>1.18.42</lombok.version>
     </properties>
@@ -85,6 +84,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

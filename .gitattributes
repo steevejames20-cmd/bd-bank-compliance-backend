@@ -1,0 +1,9 @@
+# Normalise les fins de ligne : tout est stocké en LF dans le dépôt,
+# quel que soit l'OS/éditeur utilisé pour éditer les fichiers. Évite le
+# problème rencontré au J2/J3 (fichiers "modifiés" alors que seul le
+# CRLF de Windows différait du LF suivi par git).
+* text=auto eol=lf
+
+# Les scripts Windows restent en CRLF (convention native de ces formats).
+*.bat text eol=crlf
+*.ps1 text eol=crlf

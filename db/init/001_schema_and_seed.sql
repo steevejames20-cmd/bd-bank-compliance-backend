@@ -74,9 +74,17 @@ INSERT INTO transactions (compte_id, montant, type, date_operation) VALUES
     (8, 600.00, 'VIREMENT', '2026-07-30 17:10:00'),
     (8, -50.00, 'FRAIS', '2026-07-31 07:40:00');
 
+-- Compte technique en lecture seule pour l'application
+-- (cf. docs/schema-fonctionnement.md, volet 6)
+CREATE USER IF NOT EXISTS 'bdbank_readonly'@'localhost' IDENTIFIED BY 'change_me';
+CREATE USER IF NOT EXISTS 'bdbank_readonly'@'%' IDENTIFIED BY 'change_me';
+GRANT SELECT ON `bd_bank_test`.* TO 'bdbank_readonly'@'localhost';
+GRANT SELECT ON `bd_bank_test`.* TO 'bdbank_readonly'@'%';
+FLUSH PRIVILEGES;
+
 -- Note sécurité (cf. docs/schema-fonctionnement.md, volet 6) :
 -- ce script tourne avec les droits root (comportement par défaut de
 -- l'image MySQL pour les fichiers .sql d'init) afin de pouvoir créer les
 -- tables et insérer les données de seed. L'application, elle, n'utilise
--- JAMAIS ce compte : voir 002_create_readonly_user.sh pour le compte
--- technique dédié, strictement en lecture seule (SELECT uniquement).
+-- JAMAIS ce compte root : voir le compte technique 'bdbank_readonly'
+-- ci-dessus, strictement en lecture seule (SELECT uniquement).

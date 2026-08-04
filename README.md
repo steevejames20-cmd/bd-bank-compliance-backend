@@ -16,20 +16,27 @@ dans le dossier [`docs/`](./docs) (ajouté sur la branche `jour-01-init-projet`)
 > commandes (`docker`, `mvn`, `git`) est identique.
 
 1. Copier `.env.example` en `.env` et ajuster les valeurs si besoin :
+
    ```bash
    cp .env.example .env
    ```
+
 2. Lancer la base de test locale (MySQL, avec un jeu de données de départ) :
+
    ```bash
    docker compose up -d
    ```
+
 3. Charger les variables d'environnement dans le shell, puis lancer l'application :
+
    ```bash
    set -a; source .env; set +a
    mvn spring-boot:run
    ```
+
 4. Vérifier que tout compile et que le contexte Spring démarre (= la connexion
    à la base de test est valide) :
+
    ```bash
    mvn clean compile
    mvn test
@@ -49,11 +56,14 @@ connexion au démarrage.
 
 1. Réinitialiser la base de test pour que les nouveaux scripts d'init
    s'exécutent (ils ne tournent qu'au premier démarrage d'un volume vide) :
+
    ```bash
    docker compose down -v
    docker compose up -d
    ```
+
 2. Vérifier que le compte est bien restreint au SELECT :
+
    ```bash
    # OK
    docker exec -it bd-bank-test-db mysql -u bdbank_readonly -p"change_me" bd_bank_test -e "SELECT * FROM clients;"
@@ -61,12 +71,16 @@ connexion au démarrage.
    # Doit être refusé (ERROR 1142 : INSERT command denied)
    docker exec -it bd-bank-test-db mysql -u bdbank_readonly -p"change_me" bd_bank_test -e "INSERT INTO clients (nom, email) VALUES ('test','test@test.com');"
    ```
+
 3. Lancer l'app et vérifier dans les logs la ligne `Connexion bd_bank OK -> MySQL ...` :
+
    ```bash
    set -a; source .env; set +a
    mvn spring-boot:run
    ```
+
 4. Lancer les tests (nécessite la base de test démarrée) :
+
    ```bash
    mvn test
    ```

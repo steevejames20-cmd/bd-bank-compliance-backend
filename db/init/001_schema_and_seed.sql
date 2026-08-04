@@ -32,6 +32,14 @@ CREATE TABLE IF NOT EXISTS transactions (
     CONSTRAINT fk_transactions_compte FOREIGN KEY (compte_id) REFERENCES comptes(id)
 );
 
+-- Le seed est volontairement réexécutable afin de pouvoir le recharger
+-- facilement sur une base de test locale sans devoir supprimer le volume.
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE transactions;
+TRUNCATE TABLE comptes;
+TRUNCATE TABLE clients;
+SET FOREIGN_KEY_CHECKS = 1;
+
 INSERT INTO clients (nom, email, date_naissance, pays) VALUES
     ('Amina Fotso', 'amina.fotso@example.com', '1990-04-12', 'CM'),
     ('Julien Marchand', 'julien.marchand@example.com', '1985-11-02', 'FR'),

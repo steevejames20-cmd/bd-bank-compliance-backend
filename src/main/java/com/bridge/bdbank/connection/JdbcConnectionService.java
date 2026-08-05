@@ -30,15 +30,15 @@ public class JdbcConnectionService {
 
     /**
      * Ouvre une connexion via le pool et vérifie qu'elle est utilisable.
-     * <p>
-     * La gestion fine des erreurs (base injoignable, identifiants
-     * invalides, message clair pour l'admin...) arrive en J4 : ici, on se
-     * contente de laisser remonter la {@link SQLException} telle quelle.
      *
      * @return les informations du SGBD cible (nom, version, URL), utiles
      * pour les logs et le futur endpoint de diagnostic.
+     * @throws DatabaseConnectionException si la connexion échoue, avec un
+     * message adapté au type de problème (base injoignable, identifiants
+     * invalides, base inexistante...). La {@link SQLException} d'origine
+     * reste accessible via {@code getCause()} pour le débogage.
      */
-    public DatabaseInfo testConnection() throws SQLException {
+    public DatabaseInfo testConnection() {
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metaData = connection.getMetaData();
             DatabaseInfo info = new DatabaseInfo(
@@ -49,6 +49,10 @@ public class JdbcConnectionService {
             log.info("Connexion bd_bank OK -> {} {} ({})",
                     info.productName(), info.productVersion(), info.url());
             return info;
+        } catch (SQLException e) {
+            DatabaseConnectionException translated = SqlErrorTranslator.translate(e);
+            log.error(translated.getMessage(), e);
+            throw translated;
         }
     }
 

@@ -1,5 +1,6 @@
 package com.bridge.bdbank.introspection;
 
+import com.bridge.bdbank.connection.SqlErrorTranslator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +30,7 @@ public class SchemaIntrospectionService {
      * Liste les tables "normales" (on exclut les vues et tables système)
      * de la base actuellement configurée.
      */
-    public List<TableInfo> listTables() throws SQLException {
+    public List<TableInfo> listTables() {
         List<TableInfo> tables = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection()) {
@@ -45,6 +46,8 @@ public class SchemaIntrospectionService {
                     tables.add(new TableInfo(rs.getString("TABLE_NAME"), rs.getString("TABLE_CAT")));
                 }
             }
+        } catch (SQLException e) {
+            throw SqlErrorTranslator.translate(e);
         }
 
         log.info("Introspection : {} table(s) trouvée(s) -> {}", tables.size(), tables);
@@ -53,8 +56,10 @@ public class SchemaIntrospectionService {
 
     /**
      * Liste les colonnes d'une table donnée, avec leur type SQL.
+     *
+     * @throws TableNotFoundException si la table n'existe pas dans la bd_bank.
      */
-    public List<ColumnInfo> listColumns(String tableName) throws SQLException {
+    public List<ColumnInfo> listColumns(String tableName) {
         List<ColumnInfo> columns = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection()) {
@@ -71,6 +76,12 @@ public class SchemaIntrospectionService {
                     ));
                 }
             }
+        } catch (SQLException e) {
+            throw SqlErrorTranslator.translate(e);
+        }
+
+        if (columns.isEmpty()) {
+            throw new TableNotFoundException(tableName);
         }
 
         log.info("Introspection : {} colonne(s) pour la table '{}' -> {}", columns.size(), tableName, columns);

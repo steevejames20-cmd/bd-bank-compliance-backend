@@ -13,9 +13,10 @@ import org.springframework.stereotype.Component;
  * (base de test + compte lecture seule + datasource) fonctionne de bout
  * en bout.
  * <p>
- * Purement diagnostique à ce stade : si la connexion échoue, l'exception
- * remonte telle quelle et empêche le démarrage (fail-fast). Une gestion
- * d'erreur plus fine et un message clair pour l'admin arrivent en J4.
+ * Si la connexion échoue, on logue un bloc clairement visible avec le
+ * message actionnable (voir {@link JdbcConnectionService#testConnection()})
+ * avant de stopper le démarrage (fail-fast) : un outil de conformité qui
+ * ne peut pas lire la bd_bank ne doit pas démarrer "à moitié".
  * <p>
  * {@code @Order(1)} : doit s'exécuter avant StartupSchemaIntrospection (J3)
  * — inutile de tenter l'introspection si la connexion elle-même échoue.
@@ -29,7 +30,15 @@ public class StartupConnectionCheck implements ApplicationRunner {
     private final JdbcConnectionService jdbcConnectionService;
 
     @Override
-    public void run(ApplicationArguments args) throws Exception {
-        jdbcConnectionService.testConnection();
+    public void run(ApplicationArguments args) {
+        try {
+            jdbcConnectionService.testConnection();
+        } catch (DatabaseConnectionException e) {
+            log.error("==================================================");
+            log.error("ÉCHEC DE CONNEXION À LA BD_BANK AU DÉMARRAGE");
+            log.error(e.getMessage());
+            log.error("==================================================");
+            throw e;
+        }
     }
 }

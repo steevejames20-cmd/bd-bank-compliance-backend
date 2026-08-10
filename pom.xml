@@ -20,10 +20,10 @@
     <properties>
         <java.version>25</java.version>
         <!--
-            Spring Boot 3.5.x et les JDK récents demandent une version de
-            Lombok compatible avec les compilateurs modernes. On force
-            explicitement une version récente pour éviter les erreurs de
-            compilation sur Java 25.
+            Le poste de dev utilise le JDK 25 (LTS). On aligne java.version
+            dessus plutôt que de cibler artificiellement 21, et on force
+            Lombok à une version avec support JDK 25 confirmé (voir
+            rapports/rapport_j2.md pour le détail du bug initial).
         -->
         <lombok.version>1.18.42</lombok.version>
     </properties>
@@ -68,6 +68,18 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!--
+            ANTLR : génère le lexer/parser Java du DSL à partir de
+            RuleDsl.g4 (src/main/antlr4/...). Le runtime est nécessaire au
+            code généré pour s'exécuter ; le plugin (voir <build>) fait la
+            génération elle-même.
+        -->
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.13.2</version>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -96,6 +108,29 @@
 
     <build>
         <plugins>
+            <!--
+                Génère RuleDslLexer/RuleDslParser/RuleDslVisitor à partir de
+                RuleDsl.g4, dans target/generated-sources/antlr4 (ajouté
+                automatiquement aux sources compilées, pas besoin de
+                config supplémentaire). <visitor>true</visitor> est
+                nécessaire : désactivé par défaut sinon.
+            -->
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-maven-plugin</artifactId>
+                <version>4.13.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>antlr4</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <visitor>true</visitor>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

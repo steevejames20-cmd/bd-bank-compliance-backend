@@ -6,11 +6,10 @@ package com.bridge.bdbank.dsl;
  * <p>
  * Typé {@code Object} (et non {@code ParsedCondition}) volontairement :
  * les règles de la grammaire ne produisent pas toutes le même type
- * (dslRule/condition produisent un ParsedCondition, mais value produit un
- * Long/Double/String/Boolean selon le cas) - un seul visiteur ANTLR n'a
- * qu'un seul type de retour possible, donc on prend le plus général
- * (Object) et on caste où nécessaire. C'est l'approche standard pour ce
- * genre de grammaire hétérogène.
+ * (dslRule/condition produisent un ParsedCondition, mais operand produit
+ * un Operand, et value produit un Long/Double/String/Boolean selon le
+ * cas) - un seul visiteur ANTLR n'a qu'un seul type de retour possible,
+ * donc on prend le plus général (Object) et on caste où nécessaire.
  */
 class ConditionBuilderVisitor extends RuleDslBaseVisitor<Object> {
 
@@ -21,14 +20,41 @@ class ConditionBuilderVisitor extends RuleDslBaseVisitor<Object> {
 
     @Override
     public Object visitCondition(RuleDslParser.ConditionContext ctx) {
-        RuleDslParser.ColumnContext columnCtx = ctx.column();
-
-        String table = columnCtx.table != null ? columnCtx.table.getText() : null;
-        String column = columnCtx.col.getText();
+        Operand left = (Operand) visit(ctx.left);
         ComparisonOperator operator = ComparisonOperator.fromTokenType(ctx.op.getType());
-        Object value = visit(ctx.value());
+        Operand right = (Operand) visit(ctx.right);
 
-        return new ParsedCondition(table, column, operator, value);
+        return new ParsedCondition(left, operator, right);
+    }
+
+    @Override
+    public Object visitColumnOperand(RuleDslParser.ColumnOperandContext ctx) {
+        return visit(ctx.column());
+    }
+
+    @Override
+    public Object visitColumn(RuleDslParser.ColumnContext ctx) {
+        String table = ctx.table != null ? ctx.table.getText() : null;
+        String column = ctx.col.getText();
+        return new ColumnOperand(table, column);
+    }
+
+    @Override
+    public Object visitValueOperand(RuleDslParser.ValueOperandContext ctx) {
+        Object literal = visit(ctx.value());
+        return new LiteralOperand(literal);
+    }
+
+    @Override
+    public Object visitAggregateOperand(RuleDslParser.AggregateOperandContext ctx) {
+        return visit(ctx.aggregate());
+    }
+
+    @Override
+    public Object visitAggregate(RuleDslParser.AggregateContext ctx) {
+        AggregateFunction function = AggregateFunction.fromTokenType(ctx.func.getType());
+        ColumnOperand column = (ColumnOperand) visit(ctx.column());
+        return new AggregateOperand(function, column);
     }
 
     @Override

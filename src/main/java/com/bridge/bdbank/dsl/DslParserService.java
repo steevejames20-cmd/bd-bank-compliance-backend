@@ -6,14 +6,12 @@ import org.springframework.stereotype.Service;
 
 /**
  * Point d'entrée du moteur DSL : transforme une règle écrite en texte
- * (ex. "clients.age > 18") en {@link ParsedCondition} exploitable par le
- * reste de l'application.
+ * (ex. "clients.age > 18", "comptes.solde > comptes.decouvert_autorise",
+ * "SUM(transactions.montant) > 1000") en {@link ParsedCondition}
+ * exploitable par le reste de l'application.
  * <p>
- * J6 : règles ligne-à-ligne à une seule condition uniquement. Les
- * comparaisons colonne-colonne, multi-tables et les agrégats (SUM, COUNT,
- * AVG...) arrivent en J7 - cette classe évoluera, pas la grammaire seule.
- * La traduction en SQL, elle, arrive en J8 : ici on s'arrête à la
- * structure Java, aucune requête SQL n'est générée à ce stade.
+ * La traduction en SQL arrive en J8/J9 : ici on s'arrête à la structure
+ * Java, aucune requête SQL n'est générée à ce stade.
  */
 @Service
 public class DslParserService {

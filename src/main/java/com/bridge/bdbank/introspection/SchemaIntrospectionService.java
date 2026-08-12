@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
 /**
  * Module d'introspection : liste les tables et colonnes de la bd_bank,
@@ -85,6 +86,40 @@ public class SchemaIntrospectionService {
         }
 
         log.info("Introspection : {} colonne(s) pour la table '{}' -> {}", columns.size(), tableName, columns);
+        return columns;
+    }
+
+    /**
+     * Récupère les colonnes formant la clé primaire d'une table, dans
+     * l'ordre de la clé (important pour les clés composites).
+     *
+     * @throws MissingPrimaryKeyException si la table n'a aucune clé primaire déclarée.
+     */
+    public List<String> getPrimaryKeyColumns(String tableName) {
+        // TreeMap triée par KEY_SEQ : getPrimaryKeys() ne garantit pas l'ordre
+        // des lignes retournées, alors que l'ordre d'une clé composite compte
+        // (ex: (compte_id, date) et non l'inverse).
+        var columnsBySequence = new TreeMap<Short, String>();
+
+        try (Connection connection = dataSource.getConnection()) {
+            DatabaseMetaData metaData = connection.getMetaData();
+            String catalog = connection.getCatalog();
+
+            try (ResultSet rs = metaData.getPrimaryKeys(catalog, null, tableName)) {
+                while (rs.next()) {
+                    columnsBySequence.put(rs.getShort("KEY_SEQ"), rs.getString("COLUMN_NAME"));
+                }
+            }
+        } catch (SQLException e) {
+            throw SqlErrorTranslator.translate(e);
+        }
+
+        if (columnsBySequence.isEmpty()) {
+            throw new MissingPrimaryKeyException(tableName);
+        }
+
+        List<String> columns = new ArrayList<>(columnsBySequence.values());
+        log.info("Introspection : clé primaire de '{}' -> {}", tableName, columns);
         return columns;
     }
 }

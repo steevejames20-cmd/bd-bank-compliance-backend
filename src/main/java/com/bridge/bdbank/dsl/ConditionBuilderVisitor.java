@@ -1,21 +1,44 @@
 package com.bridge.bdbank.dsl;
 
 /**
- * Construit un {@link ParsedCondition} en parcourant l'arbre syntaxique
- * généré par ANTLR pour une règle.
+ * Construit un {@link ParsedRule} en parcourant l'arbre syntaxique généré
+ * par ANTLR pour une règle.
  * <p>
- * Typé {@code Object} (et non {@code ParsedCondition}) volontairement :
- * les règles de la grammaire ne produisent pas toutes le même type
- * (dslRule/condition produisent un ParsedCondition, mais operand produit
- * un Operand, et value produit un Long/Double/String/Boolean selon le
- * cas) - un seul visiteur ANTLR n'a qu'un seul type de retour possible,
- * donc on prend le plus général (Object) et on caste où nécessaire.
+ * Typé {@code Object} (et non {@code ParsedRule}) volontairement : les
+ * règles de la grammaire ne produisent pas toutes le même type
+ * (dslRule produit un ParsedRule, condition produit un ParsedCondition,
+ * operand produit un Operand, value produit un Long/Double/String/Boolean
+ * selon le cas) - un seul visiteur ANTLR n'a qu'un seul type de retour
+ * possible, donc on prend le plus général (Object) et on caste où
+ * nécessaire.
+ * <p>
+ * Depuis le J9, {@code visitDslRule} construit aussi la {@link Relation}
+ * optionnelle (jointure ou regroupement) quand la règle en comporte une.
  */
 class ConditionBuilderVisitor extends RuleDslBaseVisitor<Object> {
 
     @Override
     public Object visitDslRule(RuleDslParser.DslRuleContext ctx) {
-        return visit(ctx.condition());
+        ParsedCondition condition = (ParsedCondition) visit(ctx.condition());
+
+        Relation relation = null;
+        if (ctx.joinClause() != null) {
+            relation = buildJoinRelation(ctx.joinClause());
+        } else if (ctx.groupByClause() != null) {
+            relation = buildGroupByRelation(ctx.groupByClause());
+        }
+
+        return new ParsedRule(condition, relation);
+    }
+
+    private JoinRelation buildJoinRelation(RuleDslParser.JoinClauseContext ctx) {
+        ColumnOperand left = (ColumnOperand) visit(ctx.leftCol);
+        ColumnOperand right = (ColumnOperand) visit(ctx.rightCol);
+        return new JoinRelation(left, right);
+    }
+
+    private GroupByRelation buildGroupByRelation(RuleDslParser.GroupByClauseContext ctx) {
+        return new GroupByRelation(ctx.col.getText());
     }
 
     @Override

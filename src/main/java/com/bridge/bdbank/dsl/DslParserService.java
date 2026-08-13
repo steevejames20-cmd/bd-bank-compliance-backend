@@ -7,11 +7,11 @@ import org.springframework.stereotype.Service;
 /**
  * Point d'entrée du moteur DSL : transforme une règle écrite en texte
  * (ex. "clients.age > 18", "comptes.solde > comptes.decouvert_autorise",
- * "SUM(transactions.montant) > 1000") en {@link ParsedCondition}
- * exploitable par le reste de l'application.
+ * "SUM(transactions.montant) > 1000 GROUP BY client_id") en
+ * {@link ParsedRule} exploitable par le reste de l'application.
  * <p>
- * La traduction en SQL arrive en J8/J9 : ici on s'arrête à la structure
- * Java, aucune requête SQL n'est générée à ce stade.
+ * La traduction en SQL (J8/J9) part de ce résultat, aucune requête SQL
+ * n'est générée à ce stade.
  */
 @Service
 public class DslParserService {
@@ -20,7 +20,7 @@ public class DslParserService {
      * @throws DslSyntaxException si la règle est syntaxiquement invalide,
      * avec un message indiquant la ligne/position du problème.
      */
-    public ParsedCondition parse(String dslText) {
+    public ParsedRule parse(String dslText) {
         var lexer = new RuleDslLexer(CharStreams.fromString(dslText));
         lexer.removeErrorListeners();
         lexer.addErrorListener(ThrowingErrorListener.INSTANCE);
@@ -32,6 +32,6 @@ public class DslParserService {
 
         RuleDslParser.DslRuleContext tree = parser.dslRule();
 
-        return (ParsedCondition) new ConditionBuilderVisitor().visit(tree);
+        return (ParsedRule) new ConditionBuilderVisitor().visit(tree);
     }
 }

@@ -1,7 +1,8 @@
 package com.bridge.bdbank.connection;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -21,11 +22,12 @@ import org.springframework.stereotype.Component;
  * {@code @Order(1)} : doit s'exécuter avant StartupSchemaIntrospection (J3)
  * — inutile de tenter l'introspection si la connexion elle-même échoue.
  */
-@Slf4j
 @Component
 @Order(1)
 @RequiredArgsConstructor
 public class StartupConnectionCheck implements ApplicationRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(StartupConnectionCheck.class);
 
     private final JdbcConnectionService jdbcConnectionService;
 

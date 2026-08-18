@@ -1,7 +1,5 @@
 package com.bridge.bdbank.scope;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -18,11 +16,17 @@ import java.util.List;
  * base : la persistance interne de l'outil (semaine 3) permettra de le
  * rendre modifiable à chaud plutôt que figé au démarrage.
  */
-@Getter
-@Setter
 @Component
 @ConfigurationProperties(prefix = "bdbank.scope")
 public class ScopeProperties {
 
     private List<String> tables = new ArrayList<>();
+
+    public List<String> getTables() {
+        return tables;
+    }
+
+    public void setTables(List<String> tables) {
+        this.tables = tables;
+    }
 }

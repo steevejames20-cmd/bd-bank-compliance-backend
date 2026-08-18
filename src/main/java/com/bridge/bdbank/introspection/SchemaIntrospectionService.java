@@ -2,7 +2,9 @@ package com.bridge.bdbank.introspection;
 
 import com.bridge.bdbank.connection.SqlErrorTranslator;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -19,12 +21,17 @@ import java.util.TreeMap;
  * uniquement via l'API JDBC standard ({@link DatabaseMetaData}) — aucune
  * requête SQL écrite à la main, donc aucun risque d'injection ici, et un
  * code qui fonctionne pareil sur MySQL ou PostgreSQL.
+ *
+ * Utilise la datasource secondaire (bankDataSource) pour se connecter à la
+ * bd_bank, distincte de la datasource principale H2 pour la persistance.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SchemaIntrospectionService {
 
+    private static final Logger log = LoggerFactory.getLogger(SchemaIntrospectionService.class);
+
+    @Qualifier("bankDataSource")
     private final DataSource dataSource;
 
     /**

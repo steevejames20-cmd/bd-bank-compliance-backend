@@ -1,7 +1,9 @@
 package com.bridge.bdbank.connection;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -17,15 +19,17 @@ import java.sql.SQLException;
  * PostgreSQL ici. Le SGBD réellement utilisé ne dépend que de la
  * configuration (driver + URL dans application.yml), jamais de ce code.
  *
- * Le {@link DataSource} injecté est celui configuré automatiquement par
- * Spring Boot (pool HikariCP) à partir de spring.datasource.* : on ne
- * rouvre pas une connexion à chaque appel, on emprunte au pool.
+ * Le {@link DataSource} injecté est la datasource secondaire configurée
+ * pour la bd_bank (bankDataSource), distincte de la datasource principale
+ * H2 utilisée pour la persistance interne.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class JdbcConnectionService {
 
+    private static final Logger log = LoggerFactory.getLogger(JdbcConnectionService.class);
+
+    @Qualifier("bankDataSource")
     private final DataSource dataSource;
 
     /**

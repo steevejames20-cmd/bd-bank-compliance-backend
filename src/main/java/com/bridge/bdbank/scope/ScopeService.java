@@ -3,7 +3,8 @@ package com.bridge.bdbank.scope;
 import com.bridge.bdbank.introspection.SchemaIntrospectionService;
 import com.bridge.bdbank.introspection.TableInfo;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,10 +19,11 @@ import java.util.stream.Collectors;
  * réinterroger la base autrement - le périmètre n'est qu'un filtre
  * appliqué par-dessus l'introspection, pas un mécanisme séparé.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ScopeService {
+
+    private static final Logger log = LoggerFactory.getLogger(ScopeService.class);
 
     private final SchemaIntrospectionService schemaIntrospectionService;
     private final ScopeProperties scopeProperties;

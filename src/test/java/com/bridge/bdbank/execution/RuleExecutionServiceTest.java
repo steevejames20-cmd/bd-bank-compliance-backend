@@ -261,4 +261,88 @@ class RuleExecutionServiceTest {
         assertThat(reactivatedAlert.getStatus()).isEqualTo(AlertStatus.ACTIVE);
         assertThat(reactivatedAlert.getResolvedAt()).isNull();
     }
+
+    @Test
+    void devraitAutoResoudreUneAlerteQuiNestPlusEnViolation() throws Exception {
+        // Setup
+        Rule rule = Rule.builder()
+            .id(1L)
+            .dslText("solde < 0")
+            .targetTable("comptes")
+            .severity(RuleSeverity.HIGH)
+            .active(true)
+            .build();
+
+        ParsedRule parsedRule = new ParsedRule(
+            new ParsedCondition(null, null, null), null);
+
+        TranslatedQuery query = new TranslatedQuery(
+            "SELECT id FROM comptes WHERE solde < ?",
+            List.of(0L),
+            "comptes",
+            List.of("id"),
+            List.of("solde")
+        );
+
+        // Alertes actives existantes
+        Alert alert1 = Alert.builder()
+            .id(100L)
+            .ruleId(1L)
+            .status(AlertStatus.ACTIVE)
+            .violatingEntityId("123")
+            .consecutiveDetections(3)
+            .build();
+
+        Alert alert2 = Alert.builder()
+            .id(101L)
+            .ruleId(1L)
+            .status(AlertStatus.ACTIVE)
+            .violatingEntityId("456")
+            .consecutiveDetections(2)
+            .build();
+
+        when(ruleRepository.findByActiveTrue()).thenReturn(List.of(rule));
+        when(dslParserService.parse("solde < 0")).thenReturn(parsedRule);
+        when(ruleTranslator.translate(parsedRule, "comptes")).thenReturn(query);
+        
+        // Seule l'alerte 123 est encore en violation (456 a été corrigée)
+        when(alertRepository.findListByRuleIdAndStatus(1L, AlertStatus.ACTIVE))
+            .thenReturn(List.of(alert1, alert2));
+        when(alertRepository.findByRuleIdAndViolatingEntityId(1L, "123"))
+            .thenReturn(Optional.of(alert1));
+
+        // Mock de la connexion SQL - seule l'entité 123 est encore en violation
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+
+        when(bankDataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(true).thenReturn(false);
+        when(resultSet.getString(1)).thenReturn("123"); // Seule 123 est encore en violation
+
+        // Exécution
+        int result = ruleExecutionService.executeAllActiveRules();
+
+        // Vérifications
+        assertThat(result).isEqualTo(1); // Une seule alerte générée/mise à jour
+        
+        // Vérifier que l'alerte 456 a été marquée comme résolue
+        ArgumentCaptor<Alert> alertCaptor = ArgumentCaptor.forClass(Alert.class);
+        verify(alertRepository, times(2)).save(alertCaptor.capture());
+        
+        List<Alert> savedAlerts = alertCaptor.getAllValues();
+        
+        // La première sauvegarde est l'auto-résolution de l'alerte 456
+        Alert resolvedAlert = savedAlerts.get(0);
+        assertThat(resolvedAlert.getId()).isEqualTo(101L);
+        assertThat(resolvedAlert.getStatus()).isEqualTo(AlertStatus.RESOLVED);
+        
+        // La deuxième sauvegarde est la mise à jour de l'alerte 123
+        Alert updatedAlert = savedAlerts.get(1);
+        assertThat(updatedAlert.getId()).isEqualTo(100L);
+        assertThat(updatedAlert.getStatus()).isEqualTo(AlertStatus.ACTIVE);
+        assertThat(updatedAlert.getConsecutiveDetections()).isEqualTo(4);
+    }
 }

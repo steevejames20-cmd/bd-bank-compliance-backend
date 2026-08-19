@@ -1,5 +1,7 @@
 package com.bridge.bdbank.persistence;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,17 +19,23 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     /**
      * Trouve toutes les alertes actives.
      */
-    List<Alert> findByStatus(AlertStatus status);
+    Page<Alert> findByStatus(AlertStatus status, Pageable pageable);
 
     /**
      * Trouve toutes les alertes pour une règle donnée.
      */
-    List<Alert> findByRuleId(Long ruleId);
+    Page<Alert> findByRuleId(Long ruleId, Pageable pageable);
 
     /**
      * Trouve toutes les alertes actives pour une règle donnée.
      */
-    List<Alert> findByRuleIdAndStatus(Long ruleId, AlertStatus status);
+    Page<Alert> findByRuleIdAndStatus(Long ruleId, AlertStatus status, Pageable pageable);
+
+    /**
+     * Trouve toutes les alertes actives pour une règle donnée (sans pagination).
+     * Utile pour l'auto-résolution.
+     */
+    List<Alert> findListByRuleIdAndStatus(Long ruleId, AlertStatus status);
 
     /**
      * Trouve une alerte par sa règle et l'entité en violation.
@@ -38,7 +46,7 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     /**
      * Trouve les alertes résolues depuis une certaine date.
      */
-    List<Alert> findByStatusAndResolvedAtAfter(AlertStatus status, LocalDateTime resolvedAt);
+    Page<Alert> findByStatusAndResolvedAtAfter(AlertStatus status, LocalDateTime resolvedAt, Pageable pageable);
 
     /**
      * Compte le nombre d'alertes actives pour une règle.
@@ -46,8 +54,24 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     long countByRuleIdAndStatus(Long ruleId, AlertStatus status);
 
     /**
+     * Compte le nombre d'alertes par statut.
+     */
+    long countByStatus(AlertStatus status);
+
+    /**
      * Supprime toutes les alertes résolues antérieures à une certaine date.
      * Utile pour le nettoyage périodique de l'historique.
      */
     void deleteByStatusAndResolvedAtBefore(AlertStatus status, LocalDateTime resolvedAt);
+
+    /**
+     * Trouve toutes les alertes actives pour une règle donnée et un ensemble d'entités.
+     * Utile pour l'auto-résolution : identifier les alertes actives correspondant aux entités encore en violation.
+     */
+    List<Alert> findByRuleIdAndStatusAndViolatingEntityIdIn(Long ruleId, AlertStatus status, List<String> violatingEntityIds);
+
+    /**
+     * Trouve les alertes détectées après une certaine date.
+     */
+    Page<Alert> findByDetectedAtAfter(LocalDateTime dateTime, Pageable pageable);
 }

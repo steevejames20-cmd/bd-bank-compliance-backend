@@ -179,7 +179,7 @@ class PersistenceTest {
         alertRepository.save(resolvedAlert);
 
         // Vérifier la recherche par règle et statut
-        var activeAlerts = alertRepository.findByRuleIdAndStatus(savedRule.getId(), AlertStatus.ACTIVE);
+        var activeAlerts = alertRepository.findListByRuleIdAndStatus(savedRule.getId(), AlertStatus.ACTIVE);
 
         assertThat(activeAlerts).hasSize(1);
         assertThat(activeAlerts.get(0).getViolatingEntityId()).isEqualTo("1");

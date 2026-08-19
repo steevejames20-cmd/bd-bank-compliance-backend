@@ -87,11 +87,46 @@ public class RuleExecutionService {
         // 2. Traduire en SQL
         TranslatedQuery query = ruleTranslator.translate(parsedRule, rule.getTargetTable());
 
-        // 3. Exécuter la requête sur la bd_bank
+        // 3. Récupérer les alertes actives existantes pour cette règle (pour auto-résolution)
+        List<Alert> existingActiveAlerts = alertRepository.findListByRuleIdAndStatus(rule.getId(), AlertStatus.ACTIVE);
+
+        // 4. Exécuter la requête sur la bd_bank
         List<String> violatingEntities = executeQuery(query);
 
-        // 4. Générer les alertes pour chaque violation
-        return generateAlerts(rule, query, violatingEntities);
+        // 5. Auto-résolution : marquer comme résolues les alertes qui ne sont plus en violation
+        int resolvedAlerts = autoResolveAlerts(existingActiveAlerts, violatingEntities);
+        log.info("Règle {} (id: {}) : {} alerte(s) auto-résolue(s)", 
+            rule.getDslText(), rule.getId(), resolvedAlerts);
+
+        // 6. Générer/mettre à jour les alertes pour chaque violation
+        int generatedAlerts = generateAlerts(rule, query, violatingEntities);
+
+        return generatedAlerts;
+    }
+
+    /**
+     * Auto-résolution des alertes : marque comme résolues les alertes actives
+     * dont l'entité n'est plus en violation.
+     * 
+     * @param existingActiveAlerts Les alertes actives existantes
+     * @param currentViolatingEntities Les entités actuellement en violation
+     * @return Le nombre d'alertes résolues
+     */
+    private int autoResolveAlerts(List<Alert> existingActiveAlerts, List<String> currentViolatingEntities) {
+        int resolvedCount = 0;
+
+        for (Alert alert : existingActiveAlerts) {
+            // Si l'entité n'est plus dans la liste des violations, l'alerte est résolue
+            if (!currentViolatingEntities.contains(alert.getViolatingEntityId())) {
+                alert.setStatus(AlertStatus.RESOLVED);
+                alertRepository.save(alert);
+                resolvedCount++;
+                log.debug("Alerte {} auto-résolue (entité {} n'est plus en violation)", 
+                    alert.getId(), alert.getViolatingEntityId());
+            }
+        }
+
+        return resolvedCount;
     }
 
     /**

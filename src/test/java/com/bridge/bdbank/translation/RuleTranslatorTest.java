@@ -9,7 +9,7 @@ import com.bridge.bdbank.dsl.JoinRelation;
 import com.bridge.bdbank.dsl.LiteralOperand;
 import com.bridge.bdbank.dsl.ParsedCondition;
 import com.bridge.bdbank.dsl.ParsedRule;
-import com.bridge.bdbank.introspection.ColumnInfo;
+import com.bridge.bdbank.ColumnInfo;
 import com.bridge.bdbank.introspection.SchemaIntrospectionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

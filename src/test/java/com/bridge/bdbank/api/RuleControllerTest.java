@@ -15,12 +15,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,19 +50,19 @@ class RuleControllerTest {
         );
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
-        when(ruleRepository.findAll(any())).thenReturn(new PageImpl<>(rules));
+        when(ruleRepository.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(new PageImpl<>(rules));
 
         ResponseEntity<Page<RuleResponse>> response = ruleController.listRules(0, 25, "Bearer valid-token");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).hasSize(2);
-        assertThat(response.getBody().getContent().get(0).id()).isEqualTo(1L);
+        assertThat(response.getBody().getContent().get(0).getId()).isEqualTo(1L);
     }
 
     @Test
     void shouldListRulesReturnEmptyPageWhenNoRules() {
         when(authenticationService.validateToken(anyString())).thenReturn(null);
-        when(ruleRepository.findAll(any())).thenReturn(Page.empty());
+        when(ruleRepository.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(Page.empty());
 
         ResponseEntity<Page<RuleResponse>> response = ruleController.listRules(0, 25, "Bearer valid-token");
 
@@ -82,19 +82,19 @@ class RuleControllerTest {
         Rule rule = createRule(1L, "age > 18", "clients", RuleSeverity.HIGH);
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
-        when(ruleRepository.findById(1L)).thenReturn(java.util.Optional.of(rule));
+        when(ruleRepository.findById(1L)).thenReturn(Optional.of(rule));
 
         ResponseEntity<RuleResponse> response = ruleController.getRule(1L, "Bearer valid-token");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().id()).isEqualTo(1L);
-        assertThat(response.getBody().dslText()).isEqualTo("age > 18");
+        assertThat(response.getBody().getId()).isEqualTo(1L);
+        assertThat(response.getBody().getDslText()).isEqualTo("age > 18");
     }
 
     @Test
     void shouldFailGetRuleForNonExistentRule() {
         when(authenticationService.validateToken(anyString())).thenReturn(null);
-        when(ruleRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+        when(ruleRepository.findById(999L)).thenReturn(Optional.empty());
 
         ResponseEntity<RuleResponse> response = ruleController.getRule(999L, "Bearer valid-token");
 
@@ -125,8 +125,8 @@ class RuleControllerTest {
         ResponseEntity<RuleResponse> response = ruleController.createRule(request, "Bearer valid-token");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().id()).isEqualTo(1L);
-        assertThat(response.getBody().dslText()).isEqualTo("age > 18");
+        assertThat(response.getBody().getId()).isEqualTo(1L);
+        assertThat(response.getBody().getDslText()).isEqualTo("age > 18");
     }
 
     @Test
@@ -156,14 +156,14 @@ class RuleControllerTest {
         updatedRule.setActive(false);
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
-        when(ruleRepository.findById(1L)).thenReturn(java.util.Optional.of(existingRule));
+        when(ruleRepository.findById(1L)).thenReturn(Optional.of(existingRule));
         when(ruleRepository.save(any(Rule.class))).thenReturn(updatedRule);
 
         ResponseEntity<RuleResponse> response = ruleController.updateRule(1L, request, "Bearer valid-token");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().dslText()).isEqualTo("age >= 21");
-        assertThat(response.getBody().severity()).isEqualTo(RuleSeverity.CRITICAL);
+        assertThat(response.getBody().getDslText()).isEqualTo("age >= 21");
+        assertThat(response.getBody().getSeverity()).isEqualTo(RuleSeverity.CRITICAL);
     }
 
     @Test
@@ -175,7 +175,7 @@ class RuleControllerTest {
             .build();
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
-        when(ruleRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+        when(ruleRepository.findById(999L)).thenReturn(Optional.empty());
 
         ResponseEntity<RuleResponse> response = ruleController.updateRule(999L, request, "Bearer valid-token");
 
@@ -230,7 +230,7 @@ class RuleControllerTest {
             .severity(RuleSeverity.HIGH)
             .build();
 
-        ValidationResult validationResult = ValidationResult.valid();
+        ValidationResult validationResult = ValidationResult.ok();
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
         when(ruleValidationService.validate("age > 18", "clients")).thenReturn(validationResult);

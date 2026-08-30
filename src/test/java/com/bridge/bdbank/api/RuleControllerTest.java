@@ -45,7 +45,7 @@ class RuleControllerTest {
     @Test
     void shouldListRulesSuccessfullyWithAuth() {
         List<Rule> rules = List.of(
-            createRule(1L, "age > 18", "clients", RuleSeverity.HIGH),
+            createRule(1L, "age < 18", "clients", RuleSeverity.HIGH),
             createRule(2L, "balance < 0", "comptes", RuleSeverity.CRITICAL)
         );
 
@@ -79,7 +79,7 @@ class RuleControllerTest {
 
     @Test
     void shouldGetRuleSuccessfullyWithAuth() {
-        Rule rule = createRule(1L, "age > 18", "clients", RuleSeverity.HIGH);
+        Rule rule = createRule(1L, "age < 18", "clients", RuleSeverity.HIGH);
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
         when(ruleRepository.findById(1L)).thenReturn(Optional.of(rule));
@@ -88,7 +88,7 @@ class RuleControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().getId()).isEqualTo(1L);
-        assertThat(response.getBody().getDslText()).isEqualTo("age > 18");
+        assertThat(response.getBody().getDslText()).isEqualTo("age < 18");
     }
 
     @Test
@@ -111,13 +111,13 @@ class RuleControllerTest {
     @Test
     void shouldCreateRuleSuccessfullyWithAuth() {
         RuleRequest request = RuleRequest.builder()
-            .dslText("age > 18")
+            .dslText("age < 18")
             .targetTable("clients")
             .severity(RuleSeverity.HIGH)
             .active(true)
             .build();
 
-        Rule savedRule = createRule(1L, "age > 18", "clients", RuleSeverity.HIGH);
+        Rule savedRule = createRule(1L, "age < 18", "clients", RuleSeverity.HIGH);
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
         when(ruleRepository.save(any(Rule.class))).thenReturn(savedRule);
@@ -126,13 +126,13 @@ class RuleControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody().getId()).isEqualTo(1L);
-        assertThat(response.getBody().getDslText()).isEqualTo("age > 18");
+        assertThat(response.getBody().getDslText()).isEqualTo("age < 18");
     }
 
     @Test
     void shouldFailCreateRuleWithoutAuth() {
         RuleRequest request = RuleRequest.builder()
-            .dslText("age > 18")
+            .dslText("age < 18")
             .targetTable("clients")
             .severity(RuleSeverity.HIGH)
             .build();
@@ -151,7 +151,7 @@ class RuleControllerTest {
             .active(false)
             .build();
 
-        Rule existingRule = createRule(1L, "age > 18", "clients", RuleSeverity.HIGH);
+        Rule existingRule = createRule(1L, "age < 18", "clients", RuleSeverity.HIGH);
         Rule updatedRule = createRule(1L, "age >= 21", "clients", RuleSeverity.CRITICAL);
         updatedRule.setActive(false);
 
@@ -225,7 +225,7 @@ class RuleControllerTest {
     @Test
     void shouldValidateRuleSuccessfullyWithAuth() {
         RuleRequest request = RuleRequest.builder()
-            .dslText("age > 18")
+            .dslText("age < 18")
             .targetTable("clients")
             .severity(RuleSeverity.HIGH)
             .build();
@@ -233,7 +233,7 @@ class RuleControllerTest {
         ValidationResult validationResult = ValidationResult.ok();
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
-        when(ruleValidationService.validate("age > 18", "clients")).thenReturn(validationResult);
+        when(ruleValidationService.validate("age < 18", "clients")).thenReturn(validationResult);
 
         ResponseEntity<ValidationResult> response = ruleController.validateRule(request, "Bearer valid-token");
 
@@ -244,7 +244,7 @@ class RuleControllerTest {
     @Test
     void shouldFailValidateRuleWithoutAuth() {
         RuleRequest request = RuleRequest.builder()
-            .dslText("age > 18")
+            .dslText("age < 18")
             .targetTable("clients")
             .severity(RuleSeverity.HIGH)
             .build();

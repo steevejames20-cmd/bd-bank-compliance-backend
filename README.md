@@ -4,7 +4,7 @@ Outil de vérification de conformité des données — Bridge bd_bank.
 
 Backend Java (Spring Boot) qui traduit des règles métier écrites en DSL en
 requêtes SQL, les exécute en lecture seule sur la base d'une banque
-(bd_bank), et génère des alertes en cas de non-conformité.
+(bd_bank), et génère des alertes en cas d'anomalie détectée.
 
 Le détail du fonctionnement, de la roadmap et du contrat d'API se trouve
 dans le dossier [`docs/`](./docs) (ajouté sur la branche `jour-01-init-projet`).

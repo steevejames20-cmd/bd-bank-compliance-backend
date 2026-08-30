@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -17,8 +16,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Test d'intégration pour le blocage temporaire après 5 tentatives échouées.
  * J17 - Vérifie que le système de sécurité fonctionne correctement.
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@DataJpaTest(properties = {
+    "bdbank.startup.checks.enabled=false",
+    "bdbank.scope.tables="
+})
 @Transactional
 class AccountLockoutIntegrationTest {
 
@@ -109,7 +110,7 @@ class AccountLockoutIntegrationTest {
 
         // Vérifier que les compteurs sont réinitialisés
         User recoveredUser = userRepository.findById(savedUser.getId()).orElseThrow();
-        assertThat(recoveredUser.getFailedLoginAttempts()).isEqualTo(0);
+        assertThat(recoveredUser.getFailedLoginAttempts()).isZero();
         assertThat(recoveredUser.getLockedUntil()).isNull();
     }
 

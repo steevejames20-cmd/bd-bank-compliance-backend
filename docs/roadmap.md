@@ -102,7 +102,7 @@ testable), pas juste une liste de tâches.
 
 > **Objectif de fin de semaine :** une règle écrite en DSL
 > (ligne-à-ligne ou agrégat) est correctement traduite en SQL, exécutée
-> sur la base de test, et retourne les bonnes lignes en violation.
+> sur la base de test, et retourne les bonnes lignes en anomalie.
 
 _Point de coordination important : dès la fin de cette semaine (ou en
 tout début de semaine 3), le contrat d\'API (liste des endpoints,
@@ -127,7 +127,7 @@ terminée. Il peut ainsi démarrer son intégration contre une API simulée
 | | règles (boucle sur toutes les règles actives) |
 | | |
 | | - Génération d\'une alerte groupée par règle en |
-| | violation (ID + colonnes concernées, sans valeurs |
+| | anomalie (ID + colonnes concernées, sans valeurs |
 | | réelles) |
 +----------+-----------------------------------------------------------+
 | **J13** | - Logique d\'auto-résolution : une alerte |

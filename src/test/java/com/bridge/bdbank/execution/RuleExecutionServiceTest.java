@@ -76,7 +76,7 @@ class RuleExecutionServiceTest {
         // Setup
         Rule rule = Rule.builder()
             .id(1L)
-            .dslText("age > 18")
+            .dslText("age < 18")
             .targetTable("clients")
             .severity(RuleSeverity.MEDIUM)
             .active(true)
@@ -94,7 +94,7 @@ class RuleExecutionServiceTest {
         );
 
         when(ruleRepository.findByActiveTrue()).thenReturn(List.of(rule));
-        when(dslParserService.parse("age > 18")).thenReturn(parsedRule);
+        when(dslParserService.parse("age < 18")).thenReturn(parsedRule);
         when(ruleTranslator.translate(parsedRule, "clients")).thenReturn(query);
         when(alertRepository.findByRuleIdAndViolatingEntityId(1L, "123")).thenReturn(Optional.empty());
 
@@ -114,7 +114,7 @@ class RuleExecutionServiceTest {
 
         // Vérifications
         assertThat(result).isEqualTo(1);
-        verify(dslParserService).parse("age > 18");
+        verify(dslParserService).parse("age < 18");
         verify(ruleTranslator).translate(parsedRule, "clients");
         verify(alertRepository).save(any(Alert.class));
     }
@@ -205,7 +205,7 @@ class RuleExecutionServiceTest {
         // Setup
         Rule rule = Rule.builder()
             .id(1L)
-            .dslText("age > 18")
+            .dslText("age < 18")
             .targetTable("clients")
             .severity(RuleSeverity.MEDIUM)
             .active(true)
@@ -232,7 +232,7 @@ class RuleExecutionServiceTest {
             .build();
 
         when(ruleRepository.findByActiveTrue()).thenReturn(List.of(rule));
-        when(dslParserService.parse("age > 18")).thenReturn(parsedRule);
+        when(dslParserService.parse("age < 18")).thenReturn(parsedRule);
         when(ruleTranslator.translate(parsedRule, "clients")).thenReturn(query);
         when(alertRepository.findByRuleIdAndViolatingEntityId(1L, "789"))
             .thenReturn(Optional.of(resolvedAlert));
@@ -305,13 +305,13 @@ class RuleExecutionServiceTest {
         when(dslParserService.parse("solde < 0")).thenReturn(parsedRule);
         when(ruleTranslator.translate(parsedRule, "comptes")).thenReturn(query);
         
-        // Seule l'alerte 123 est encore en violation (456 a été corrigée)
+        // Seule l'alerte 123 est encore en anomalie (456 a été corrigée)
         when(alertRepository.findListByRuleIdAndStatus(1L, AlertStatus.ACTIVE))
             .thenReturn(List.of(alert1, alert2));
         when(alertRepository.findByRuleIdAndViolatingEntityId(1L, "123"))
             .thenReturn(Optional.of(alert1));
 
-        // Mock de la connexion SQL - seule l'entité 123 est encore en violation
+        // Mock de la connexion SQL - seule l'entité 123 est encore en anomalie
         Connection connection = mock(Connection.class);
         PreparedStatement statement = mock(PreparedStatement.class);
         ResultSet resultSet = mock(ResultSet.class);

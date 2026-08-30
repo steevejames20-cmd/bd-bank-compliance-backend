@@ -48,7 +48,7 @@ de base spécifique.
 
 **Étape 6 --- Génération de l\'alerte**
 
-> Si des violations sont détectées, une alerte groupée est créée pour la
+> Si des anomalies sont détectées, une alerte groupée est créée pour la
 > règle concernée, avec un statut « active ».
 
 **Étape 7 --- Notification & historique**
@@ -60,7 +60,7 @@ de base spécifique.
 # **3. Schéma du flux de données**
 
 Admin (règles + périmètre) → Moteur DSL→SQL (Java) → bd_bank (lecture
-seule, MySQL/PostgreSQL) → Résultats (lignes en violation) → Génération
+seule, MySQL/PostgreSQL) → Résultats (lignes en anomalie) → Génération
 d\'alerte → Espace admin (notification + historique)
 
 # **4. Informations supplémentaires**
@@ -90,7 +90,7 @@ d\'alerte → Espace admin (notification + historique)
                                réplication locale des données).
 
   5        **Comparaison       Chaque requête SQL retourne directement
-           règles / données**  les lignes en violation. Exécution
+           règles / données**  les lignes en anomalie. Exécution
                                séquentielle des règles. Pour les
                                agrégats, l\'alerte pointe vers l\'entité
                                globale concernée, pas vers une ligne

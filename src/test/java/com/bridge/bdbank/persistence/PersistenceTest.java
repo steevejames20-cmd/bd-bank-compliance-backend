@@ -32,7 +32,7 @@ class PersistenceTest {
     void devraitCreerEtRecupererUneRegle() {
         // Créer une règle
         Rule rule = Rule.builder()
-                .dslText("age > 18")
+                .dslText("age < 18")
                 .targetTable("clients")
                 .severity(RuleSeverity.MEDIUM)
                 .active(true)
@@ -49,7 +49,7 @@ class PersistenceTest {
         Rule foundRule = ruleRepository.findById(savedRule.getId()).orElse(null);
 
         assertThat(foundRule).isNotNull();
-        assertThat(foundRule.getDslText()).isEqualTo("age > 18");
+        assertThat(foundRule.getDslText()).isEqualTo("age < 18");
         assertThat(foundRule.getTargetTable()).isEqualTo("clients");
         assertThat(foundRule.getSeverity()).isEqualTo(RuleSeverity.MEDIUM);
         assertThat(foundRule.getActive()).isTrue();
@@ -120,14 +120,14 @@ class PersistenceTest {
     void devraitTrouverLesReglesActives() {
         // Créer des règles actives et inactives
         Rule activeRule1 = Rule.builder()
-                .dslText("age > 18")
+                .dslText("age < 18")
                 .targetTable("clients")
                 .severity(RuleSeverity.LOW)
                 .active(true)
                 .build();
 
         Rule activeRule2 = Rule.builder()
-                .dslText("solde >= 0")
+                .dslText("solde < 0")
                 .targetTable("comptes")
                 .severity(RuleSeverity.MEDIUM)
                 .active(true)

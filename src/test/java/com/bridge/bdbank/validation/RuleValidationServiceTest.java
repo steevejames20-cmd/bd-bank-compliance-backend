@@ -56,11 +56,11 @@ class RuleValidationServiceTest {
     @Test
     void devraitValiderUneRegleCorrecte() {
         ParsedRule rule = regleMinimale();
-        when(dslParserService.parse("age > 18")).thenReturn(rule);
+        when(dslParserService.parse("age < 18")).thenReturn(rule);
         when(ruleTranslator.translate(rule, "clients")).thenReturn(
                 new TranslatedQuery("SELECT id, age FROM clients WHERE age <= ?", List.of(18L), "clients", List.of("id"), List.of("age")));
 
-        ValidationResult result = validationService.validate("age > 18", "clients");
+        ValidationResult result = validationService.validate("age < 18", "clients");
 
         assertThat(result.valid()).isTrue();
         assertThat(result.errorMessage()).isNull();
@@ -81,7 +81,7 @@ class RuleValidationServiceTest {
         when(dslParserService.parse(anyString())).thenReturn(regleMinimale());
         when(ruleTranslator.translate(any(), anyString())).thenThrow(new TableNotFoundException("inexistante"));
 
-        ValidationResult result = validationService.validate("age > 18", "inexistante");
+        ValidationResult result = validationService.validate("age < 18", "inexistante");
 
         assertThat(result.valid()).isFalse();
         assertThat(result.errorMessage()).isNotBlank();
@@ -92,7 +92,7 @@ class RuleValidationServiceTest {
         when(dslParserService.parse(anyString())).thenReturn(regleMinimale());
         when(ruleTranslator.translate(any(), anyString())).thenThrow(new MissingPrimaryKeyException("clients"));
 
-        ValidationResult result = validationService.validate("age > 18", "clients");
+        ValidationResult result = validationService.validate("age < 18", "clients");
 
         assertThat(result.valid()).isFalse();
     }

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -36,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Tag("e2e")
 @SpringBootTest
+@ActiveProfiles("e2e")
 class RuleTranslatorEndToEndTest {
 
     @Autowired
@@ -49,22 +51,25 @@ class RuleTranslatorEndToEndTest {
 
     @Test
     void cas1_colonneVsValeur_comptesSoldeNegatif() throws Exception {
-        List<Object> violations = executer("comptes.solde >= 0", "comptes");
+        // Anomalie: solde < 0 (comptes avec solde négatif)
+        List<Object> violations = executer("comptes.solde < 0", "comptes");
 
         assertThat(violations).containsExactlyInAnyOrder(2L, 7L);
     }
 
     @Test
     void cas2_colonneVsColonne_memeTable_soldeSousDecouvertAutorise() throws Exception {
-        List<Object> violations = executer("comptes.solde >= comptes.decouvert_autorise", "comptes");
+        // Anomalie: solde < decouvert_autorise (comptes sous le découvert autorisé)
+        List<Object> violations = executer("comptes.solde < comptes.decouvert_autorise", "comptes");
 
         assertThat(violations).containsExactlyInAnyOrder(2L, 7L);
     }
 
     @Test
     void cas3_colonneVsColonne_deuxTables_transactionSousLeDecouvertAutorise() throws Exception {
+        // Anomalie: montant < decouvert_autorise (transactions sous le découvert autorisé)
         List<Object> violations = executer(
-                "transactions.montant >= comptes.decouvert_autorise ON transactions.compte_id == comptes.id",
+                "transactions.montant < comptes.decouvert_autorise ON transactions.compte_id == comptes.id",
                 "transactions");
 
         assertThat(violations).containsExactly(3L);
@@ -72,16 +77,18 @@ class RuleTranslatorEndToEndTest {
 
     @Test
     void cas4_agregatVsValeur_sommeTransactionsNegativeParCompte() throws Exception {
+        // Anomalie: somme < 0 (comptes avec somme de transactions négative)
         List<Object> groupesEnViolation = executer(
-                "SUM(transactions.montant) >= 0 GROUP BY compte_id", "transactions");
+                "SUM(transactions.montant) < 0 GROUP BY compte_id", "transactions");
 
         assertThat(groupesEnViolation).containsExactlyInAnyOrder(2L, 7L);
     }
 
     @Test
     void cas5_agregatVsColonne_deuxTables_sommeTransactionsSousDecouvertAutorise() throws Exception {
+        // Anomalie: somme < decouvert_autorise (comptes où la somme des transactions est sous le découvert autorisé)
         List<Object> groupesEnViolation = executer(
-                "SUM(transactions.montant) >= comptes.decouvert_autorise ON transactions.compte_id == comptes.id",
+                "SUM(transactions.montant) < comptes.decouvert_autorise ON transactions.compte_id == comptes.id",
                 "transactions");
 
         assertThat(groupesEnViolation).containsExactly(2L);

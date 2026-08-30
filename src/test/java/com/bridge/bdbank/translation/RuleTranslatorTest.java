@@ -80,11 +80,12 @@ class RuleTranslatorTest {
 
     @Test
     void devraitTraduireUneConditionSimpleEnSaViolation() {
-        var condition = new ParsedCondition(new ColumnOperand(null, "age"), ComparisonOperator.GT, new LiteralOperand(18L));
+        // Maintenant l'utilisateur exprime directement l'anomalie: "age < 18" (mineurs)
+        var condition = new ParsedCondition(new ColumnOperand(null, "age"), ComparisonOperator.LT, new LiteralOperand(18L));
 
         TranslatedQuery result = translator.translate(ruleSansRelation(condition), "clients");
 
-        assertThat(result.sql()).isEqualTo("SELECT id, age FROM clients WHERE age <= ?");
+        assertThat(result.sql()).isEqualTo("SELECT id, age FROM clients WHERE age < ?");
         assertThat(result.params()).containsExactly(18L);
         assertThat(result.primaryKeyColumns()).containsExactly("id");
         assertThat(result.involvedColumns()).containsExactly("age");
@@ -92,8 +93,9 @@ class RuleTranslatorTest {
 
     @Test
     void devraitDonnerLeMemeResultatQuelQueSoitLOrdreDeLaCondition() {
-        var ordreNormal = new ParsedCondition(new ColumnOperand(null, "age"), ComparisonOperator.GT, new LiteralOperand(18L));
-        var ordreInverse = new ParsedCondition(new LiteralOperand(18L), ComparisonOperator.LT, new ColumnOperand(null, "age"));
+        // Les deux formes expriment la même anomalie: "age < 18"
+        var ordreNormal = new ParsedCondition(new ColumnOperand(null, "age"), ComparisonOperator.LT, new LiteralOperand(18L));
+        var ordreInverse = new ParsedCondition(new LiteralOperand(18L), ComparisonOperator.GT, new ColumnOperand(null, "age"));
 
         TranslatedQuery resultNormal = translator.translate(ruleSansRelation(ordreNormal), "clients");
         TranslatedQuery resultInverse = translator.translate(ruleSansRelation(ordreInverse), "clients");
@@ -103,29 +105,34 @@ class RuleTranslatorTest {
 
     @Test
     void devraitTraduireUneValeurChaineEtBooleenneEtDecimaleNegative() {
-        var chaine = new ParsedCondition(new ColumnOperand("clients", "pays"), ComparisonOperator.EQ, new LiteralOperand("FR"));
+        // Anomalie: pays différent de FR
+        var chaine = new ParsedCondition(new ColumnOperand("clients", "pays"), ComparisonOperator.NE, new LiteralOperand("FR"));
         assertThat(translator.translate(ruleSansRelation(chaine), "clients").sql())
                 .isEqualTo("SELECT id, pays FROM clients WHERE pays <> ?");
 
-        var booleen = new ParsedCondition(new ColumnOperand(null, "actif"), ComparisonOperator.NE, new LiteralOperand(false));
+        // Anomalie: compte inactif
+        var booleen = new ParsedCondition(new ColumnOperand(null, "actif"), ComparisonOperator.EQ, new LiteralOperand(false));
         assertThat(translator.translate(ruleSansRelation(booleen), "clients").sql())
                 .isEqualTo("SELECT id, actif FROM clients WHERE actif = ?");
 
+        // Anomalie: âge inférieur à -100.50
         var decimal = new ParsedCondition(new ColumnOperand(null, "age"), ComparisonOperator.LT, new LiteralOperand(-100.50));
         assertThat(translator.translate(ruleSansRelation(decimal), "clients").params()).containsExactly(-100.50);
     }
 
     @Test
     void neDevraitPasDupliquerLaColonneQuandElleEstAussiLaClePrimaire() {
+        // Anomalie: id > 0 (si on cherche des IDs invalides)
         var condition = new ParsedCondition(new ColumnOperand(null, "id"), ComparisonOperator.GT, new LiteralOperand(0L));
 
         TranslatedQuery result = translator.translate(ruleSansRelation(condition), "clients");
 
-        assertThat(result.sql()).isEqualTo("SELECT id FROM clients WHERE id <= ?");
+        assertThat(result.sql()).isEqualTo("SELECT id FROM clients WHERE id > ?");
     }
 
     @Test
     void devraitRejeterUnPrefixeDeTableIncorrect() {
+        // Anomalie: solde > 0 (mais avec mauvais préfixe de table)
         var condition = new ParsedCondition(new ColumnOperand("comptes", "solde"), ComparisonOperator.GT, new LiteralOperand(0L));
 
         assertThatThrownBy(() -> translator.translate(ruleSansRelation(condition), "clients"))
@@ -134,6 +141,7 @@ class RuleTranslatorTest {
 
     @Test
     void devraitRejeterUneColonneInconnue() {
+        // Anomalie: colonne inconnue
         var condition = new ParsedCondition(new ColumnOperand(null, "inexistante"), ComparisonOperator.GT, new LiteralOperand(0L));
 
         assertThatThrownBy(() -> translator.translate(ruleSansRelation(condition), "clients"))
@@ -160,12 +168,13 @@ class RuleTranslatorTest {
 
     @Test
     void devraitTraduireUneComparaisonColonneColonneSurLaMemeTable() {
+        // Anomalie: solde inférieur au découvert autorisé
         var condition = new ParsedCondition(
-                new ColumnOperand("comptes", "solde"), ComparisonOperator.GT, new ColumnOperand("comptes", "decouvert_autorise"));
+                new ColumnOperand("comptes", "solde"), ComparisonOperator.LT, new ColumnOperand("comptes", "decouvert_autorise"));
 
         TranslatedQuery result = translator.translate(ruleSansRelation(condition), "comptes");
 
-        assertThat(result.sql()).isEqualTo("SELECT id, solde, decouvert_autorise FROM comptes WHERE solde <= decouvert_autorise");
+        assertThat(result.sql()).isEqualTo("SELECT id, solde, decouvert_autorise FROM comptes WHERE solde < decouvert_autorise");
         assertThat(result.params()).isEmpty();
     }
 
@@ -185,6 +194,7 @@ class RuleTranslatorTest {
 
     @Test
     void devraitTraduireUneComparaisonColonneColonneEntreDeuxTablesAvecJointure() {
+        // Anomalie: quantité commandée > quantité disponible
         var condition = new ParsedCondition(
                 new ColumnOperand("commandes", "quantite"), ComparisonOperator.GT, new ColumnOperand("stock", "quantite_disponible"));
         var join = new JoinRelation(new ColumnOperand("commandes", "produit_id"), new ColumnOperand("stock", "produit_id"));
@@ -195,7 +205,7 @@ class RuleTranslatorTest {
         assertThat(result.sql()).isEqualTo(
                 "SELECT commandes.id, commandes.quantite, stock.quantite_disponible"
                         + " FROM commandes JOIN stock ON commandes.produit_id = stock.produit_id"
-                        + " WHERE commandes.quantite <= stock.quantite_disponible");
+                        + " WHERE commandes.quantite > stock.quantite_disponible");
         assertThat(result.primaryKeyColumns()).containsExactly("commandes.id");
     }
 
@@ -236,6 +246,7 @@ class RuleTranslatorTest {
 
     @Test
     void devraitTraduireUnAgregatContreUneValeurAvecGroupBy() {
+        // Anomalie: somme des montants > 1000 (transactions suspectes)
         var condition = new ParsedCondition(
                 new AggregateOperand(AggregateFunction.SUM, new ColumnOperand("transactions", "montant")),
                 ComparisonOperator.GT, new LiteralOperand(1000L));
@@ -244,7 +255,7 @@ class RuleTranslatorTest {
         TranslatedQuery result = translator.translate(rule, "transactions");
 
         assertThat(result.sql()).isEqualTo(
-                "SELECT client_id, SUM(montant) FROM transactions GROUP BY client_id HAVING SUM(montant) <= ?");
+                "SELECT client_id, SUM(montant) FROM transactions GROUP BY client_id HAVING SUM(montant) > ?");
         assertThat(result.params()).containsExactly(1000L);
         assertThat(result.primaryKeyColumns()).containsExactly("client_id");
         assertThat(result.involvedColumns()).containsExactly("montant");
@@ -278,6 +289,7 @@ class RuleTranslatorTest {
 
     @Test
     void devraitTraduireLeCasStockCommandes() {
+        // Anomalie: somme des quantités commandées > quantité disponible
         var condition = new ParsedCondition(
                 new AggregateOperand(AggregateFunction.SUM, new ColumnOperand("commandes", "quantite")),
                 ComparisonOperator.GT, new ColumnOperand("stock", "quantite_disponible"));
@@ -290,7 +302,7 @@ class RuleTranslatorTest {
                 "SELECT stock.produit_id, SUM(commandes.quantite), stock.quantite_disponible"
                         + " FROM commandes JOIN stock ON commandes.produit_id = stock.produit_id"
                         + " GROUP BY stock.produit_id, stock.quantite_disponible"
-                        + " HAVING SUM(commandes.quantite) <= stock.quantite_disponible");
+                        + " HAVING SUM(commandes.quantite) > stock.quantite_disponible");
         assertThat(result.params()).isEmpty();
         assertThat(result.primaryKeyColumns()).containsExactly("stock.produit_id");
         assertThat(result.involvedColumns()).containsExactly("commandes.quantite", "stock.quantite_disponible");

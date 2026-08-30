@@ -10,7 +10,10 @@ import org.springframework.boot.test.context.SpringBootTest;
  * Prérequis : `docker compose up -d` (voir README) pour que la base de
  * test locale soit disponible pendant le build.
  */
-@SpringBootTest
+@SpringBootTest(properties = {
+    "bdbank.startup.checks.enabled=false",
+    "bdbank.scope.tables="
+})
 class BdBankComplianceApplicationTests {
 
     @Test

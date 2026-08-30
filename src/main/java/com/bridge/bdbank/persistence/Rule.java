@@ -25,7 +25,7 @@ public class Rule {
     private Long id;
 
     /**
-     * La règle écrite en DSL (ex: "age > 18", "SUM(transactions.montant) > 1000 GROUP BY client_id")
+     * La règle écrite en DSL (ex: "age < 18", "SUM(transactions.montant) > 1000 GROUP BY client_id")
      */
     @Column(nullable = false, length = 1000)
     private String dslText;

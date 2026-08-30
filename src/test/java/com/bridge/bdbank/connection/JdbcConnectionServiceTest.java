@@ -10,7 +10,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Vérifie que la couche de connexion fonctionne avec la datasource de test,
  * sans dépendre d'une base MySQL locale.
  */
-@SpringBootTest
+@SpringBootTest(properties = {
+    "bdbank.startup.checks.enabled=false",
+    "bdbank.scope.tables="
+})
 class JdbcConnectionServiceTest {
 
     @Autowired

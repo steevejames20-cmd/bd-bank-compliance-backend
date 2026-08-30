@@ -227,7 +227,7 @@ class AlertHistoryServiceTest {
         // Setup
         Rule rule = Rule.builder()
             .id(1L)
-            .dslText("age > 18")
+            .dslText("age < 18")
             .targetTable("clients")
             .severity(RuleSeverity.MEDIUM)
             .active(true)
@@ -242,7 +242,7 @@ class AlertHistoryServiceTest {
 
         // Vérifications
         assertThat(result.ruleId()).isEqualTo(1L);
-        assertThat(result.ruleDslText()).isEqualTo("age > 18");
+        assertThat(result.ruleDslText()).isEqualTo("age < 18");
         assertThat(result.activeCount()).isEqualTo(5L);
         assertThat(result.resolvedCount()).isEqualTo(3L);
         assertThat(result.totalCount()).isEqualTo(8L);

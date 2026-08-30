@@ -21,8 +21,11 @@ import java.util.List;
 
 /**
  * Traduit une {@link ParsedRule} (condition + relation optionnelle) en
- * requête SQL paramétrée qui retourne les lignes ou groupes EN VIOLATION
- * de la règle - pas ce qui est conforme.
+ * requête SQL paramétrée qui retourne les lignes ou groupes correspondant
+ * directement à l'anomalie recherchée.
+ * <p>
+ * L'utilisateur exprime directement l'anomalie dans le DSL (ex: "comptes.solde < 0"),
+ * et le système génère le SQL correspondant avec le même opérateur.
  * <p>
  * Cinq cas gérés :
  * <ol>
@@ -92,14 +95,15 @@ public class RuleTranslator {
     private TranslatedQuery translateColumnToLiteral(ColumnAndLiteral resolved, String targetTable) {
         ResolvedColumn column = resolveAgainstSingleTable(resolved.column(), targetTable);
         List<String> primaryKeyColumns = schemaIntrospectionService.getPrimaryKeyColumns(targetTable);
-        ComparisonOperator violationOperator = negate(resolved.operator());
+        // L'opérateur exprime directement l'anomalie recherchée
+        ComparisonOperator anomalyOperator = resolved.operator();
 
         var selectColumns = new LinkedHashSet<String>(primaryKeyColumns);
         selectColumns.add(column.column());
 
         String sql = "SELECT " + String.join(", ", selectColumns)
                 + " FROM " + targetTable
-                + " WHERE " + column.column() + " " + toSql(violationOperator) + " ?";
+                + " WHERE " + column.column() + " " + toSql(anomalyOperator) + " ?";
 
         return new TranslatedQuery(sql, List.of(resolved.literal().value()), targetTable,
                 primaryKeyColumns, List.of(column.column()));
@@ -113,7 +117,8 @@ public class RuleTranslator {
             ResolvedColumn left = resolveAgainstSingleTable(leftCol, targetTable);
             ResolvedColumn right = resolveAgainstSingleTable(rightCol, targetTable);
             List<String> primaryKeyColumns = schemaIntrospectionService.getPrimaryKeyColumns(targetTable);
-            ComparisonOperator violationOperator = negate(operator);
+            // L'opérateur exprime directement l'anomalie recherchée
+            ComparisonOperator anomalyOperator = operator;
 
             var selectColumns = new LinkedHashSet<String>(primaryKeyColumns);
             selectColumns.add(left.column());
@@ -121,7 +126,7 @@ public class RuleTranslator {
 
             String sql = "SELECT " + String.join(", ", selectColumns)
                     + " FROM " + targetTable
-                    + " WHERE " + left.column() + " " + toSql(violationOperator) + " " + right.column();
+                    + " WHERE " + left.column() + " " + toSql(anomalyOperator) + " " + right.column();
 
             return new TranslatedQuery(sql, List.of(), targetTable, primaryKeyColumns,
                     List.of(left.column(), right.column()));
@@ -134,7 +139,8 @@ public class RuleTranslator {
         ResolvedColumn left = resolveAgainstJoin(leftCol, targetTable, joinedTable);
         ResolvedColumn right = resolveAgainstJoin(rightCol, targetTable, joinedTable);
         List<String> primaryKeyColumns = qualify(targetTable, schemaIntrospectionService.getPrimaryKeyColumns(targetTable));
-        ComparisonOperator violationOperator = negate(operator);
+        // L'opérateur exprime directement l'anomalie recherchée
+        ComparisonOperator anomalyOperator = operator;
         String joinClause = buildJoinClause(join);
 
         var selectColumns = new LinkedHashSet<String>(primaryKeyColumns);
@@ -144,7 +150,7 @@ public class RuleTranslator {
         String sql = "SELECT " + String.join(", ", selectColumns)
                 + " FROM " + targetTable
                 + " JOIN " + joinedTable + " ON " + joinClause
-                + " WHERE " + left.qualified() + " " + toSql(violationOperator) + " " + right.qualified();
+                + " WHERE " + left.qualified() + " " + toSql(anomalyOperator) + " " + right.qualified();
 
         return new TranslatedQuery(sql, List.of(), targetTable, primaryKeyColumns,
                 List.of(left.qualified(), right.qualified()));
@@ -191,13 +197,14 @@ public class RuleTranslator {
     private TranslatedQuery translateAggregateVsLiteral(AggregateFunction function, ResolvedColumn aggColumn,
                                                           ComparisonOperator operator, LiteralOperand literal,
                                                           GroupByRelation groupBy, String targetTable) {
-        ComparisonOperator violationOperator = negate(operator);
+        // L'opérateur exprime directement l'anomalie recherchée
+        ComparisonOperator anomalyOperator = operator;
         String aggExpr = toSql(function) + "(" + aggColumn.column() + ")";
 
         String sql = "SELECT " + groupBy.column() + ", " + aggExpr
                 + " FROM " + targetTable
                 + " GROUP BY " + groupBy.column()
-                + " HAVING " + aggExpr + " " + toSql(violationOperator) + " ?";
+                + " HAVING " + aggExpr + " " + toSql(anomalyOperator) + " ?";
 
         return new TranslatedQuery(sql, List.of(literal.value()), targetTable,
                 List.of(groupBy.column()), List.of(aggColumn.column()));
@@ -206,7 +213,8 @@ public class RuleTranslator {
     private TranslatedQuery translateAggregateVsColumn(AggregateFunction function, ResolvedColumn aggColumn,
                                                          ComparisonOperator operator, ResolvedColumn otherColumn,
                                                          JoinRelation join, String targetTable, String joinedTable) {
-        ComparisonOperator violationOperator = negate(operator);
+        // L'opérateur exprime directement l'anomalie recherchée
+        ComparisonOperator anomalyOperator = operator;
         String joinClause = buildJoinClause(join);
         // Clé de regroupement implicite : la colonne de jointure côté table
         // jointe (ex: stock.produit_id) - chaque groupe correspond à une
@@ -219,7 +227,7 @@ public class RuleTranslator {
                 + " FROM " + targetTable
                 + " JOIN " + joinedTable + " ON " + joinClause
                 + " GROUP BY " + groupKey + ", " + otherColumn.qualified()
-                + " HAVING " + aggExpr + " " + toSql(violationOperator) + " " + otherColumn.qualified();
+                + " HAVING " + aggExpr + " " + toSql(anomalyOperator) + " " + otherColumn.qualified();
 
         return new TranslatedQuery(sql, List.of(), targetTable,
                 List.of(groupKey), List.of(aggColumn.qualified(), otherColumn.qualified()));
@@ -340,18 +348,6 @@ public class RuleTranslator {
     // ------------------------------------------------------------------
     // Opérateurs / fonctions -> SQL
     // ------------------------------------------------------------------
-
-    /** Inverse une comparaison : passe d'une "condition de conformité" à une "condition de violation". */
-    private static ComparisonOperator negate(ComparisonOperator operator) {
-        return switch (operator) {
-            case GT -> ComparisonOperator.LE;
-            case LT -> ComparisonOperator.GE;
-            case GE -> ComparisonOperator.LT;
-            case LE -> ComparisonOperator.GT;
-            case EQ -> ComparisonOperator.NE;
-            case NE -> ComparisonOperator.EQ;
-        };
-    }
 
     /** Retourne l'opérateur "miroir" quand on échange les deux côtés d'une comparaison. */
     private static ComparisonOperator mirror(ComparisonOperator operator) {

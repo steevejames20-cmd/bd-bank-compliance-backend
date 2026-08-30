@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * Entité représentant une alerte générée par une règle de conformité.
- * Contient les informations sur la violation détectée et son statut de résolution.
+ * Contient les informations sur l'anomalie détectée et son statut de résolution.
  */
 @Entity
 @Table(name = "alerts")
@@ -51,15 +51,15 @@ public class Alert {
     private LocalDateTime resolvedAt;
 
     /**
-     * Identifiant de la ligne ou du groupe en violation
+     * Identifiant de la ligne ou du groupe en anomalie
      * (clé primaire pour les règles ligne-à-ligne, clé de groupe pour les agrégats)
      */
     @Column(name = "violating_entity_id", nullable = false)
     private String violatingEntityId;
 
     /**
-     * Liste des colonnes concernées par la violation (sans les valeurs réelles)
-     * Ex: ["solde", "decouvert_autorise"] pour une règle "solde <= decouvert_autorise"
+     * Liste des colonnes concernées par l'anomalie (sans les valeurs réelles)
+     * Ex: ["solde", "decouvert_autorise"] pour une règle "solde < decouvert_autorise"
      */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "alert_columns", joinColumns = @JoinColumn(name = "alert_id"))

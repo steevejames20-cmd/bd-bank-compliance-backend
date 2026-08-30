@@ -27,7 +27,8 @@ import java.util.List;
  * Moteur d'exécution séquentielle des règles de conformité.
  * 
  * Parcourt toutes les règles actives, exécute les requêtes SQL correspondantes
- * sur la bd_bank, et génère des alertes pour chaque violation détectée.
+ * sur la bd_bank, et génère des alertes pour chaque anomalie détectée.
+ * Les règles décrivent directement les anomalies à rechercher (ex: "solde < 0").
  */
 @Service
 @RequiredArgsConstructor
@@ -93,12 +94,12 @@ public class RuleExecutionService {
         // 4. Exécuter la requête sur la bd_bank
         List<String> violatingEntities = executeQuery(query);
 
-        // 5. Auto-résolution : marquer comme résolues les alertes qui ne sont plus en violation
+        // 5. Auto-résolution : marquer comme résolues les alertes qui ne sont plus en anomalie
         int resolvedAlerts = autoResolveAlerts(existingActiveAlerts, violatingEntities);
         log.info("Règle {} (id: {}) : {} alerte(s) auto-résolue(s)", 
             rule.getDslText(), rule.getId(), resolvedAlerts);
 
-        // 6. Générer/mettre à jour les alertes pour chaque violation
+        // 6. Générer/mettre à jour les alertes pour chaque anomalie
         int generatedAlerts = generateAlerts(rule, query, violatingEntities);
 
         return generatedAlerts;
@@ -106,22 +107,22 @@ public class RuleExecutionService {
 
     /**
      * Auto-résolution des alertes : marque comme résolues les alertes actives
-     * dont l'entité n'est plus en violation.
+     * dont l'entité n'est plus en anomalie.
      * 
      * @param existingActiveAlerts Les alertes actives existantes
-     * @param currentViolatingEntities Les entités actuellement en violation
+     * @param currentViolatingEntities Les entités actuellement en anomalie
      * @return Le nombre d'alertes résolues
      */
     private int autoResolveAlerts(List<Alert> existingActiveAlerts, List<String> currentViolatingEntities) {
         int resolvedCount = 0;
 
         for (Alert alert : existingActiveAlerts) {
-            // Si l'entité n'est plus dans la liste des violations, l'alerte est résolue
+            // Si l'entité n'est plus dans la liste des anomalies, l'alerte est résolue
             if (!currentViolatingEntities.contains(alert.getViolatingEntityId())) {
                 alert.setStatus(AlertStatus.RESOLVED);
                 alertRepository.save(alert);
                 resolvedCount++;
-                log.debug("Alerte {} auto-résolue (entité {} n'est plus en violation)", 
+                log.debug("Alerte {} auto-résolue (entité {} n'est plus en anomalie)", 
                     alert.getId(), alert.getViolatingEntityId());
             }
         }
@@ -133,7 +134,7 @@ public class RuleExecutionService {
      * Exécute la requête SQL traduite sur la bd_bank.
      * 
      * @param query La requête traduite à exécuter
-     * @return La liste des entités en violation (identifiants)
+     * @return La liste des entités en anomalie (identifiants)
      */
     private List<String> executeQuery(TranslatedQuery query) {
         List<String> violatingEntities = new ArrayList<>();
@@ -150,7 +151,7 @@ public class RuleExecutionService {
             // Exécuter et récupérer les résultats
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    // La première colonne contient l'identifiant de l'entité en violation
+                    // La première colonne contient l'identifiant de l'entité en anomalie
                     violatingEntities.add(resultSet.getString(1));
                 }
             }
@@ -163,11 +164,11 @@ public class RuleExecutionService {
     }
 
     /**
-     * Génère des alertes pour chaque entité en violation.
+     * Génère des alertes pour chaque entité en anomalie.
      * 
-     * @param rule La règle qui a généré les violations
+     * @param rule La règle qui a généré les anomalies
      * @param query La requête exécutée (pour les colonnes concernées)
-     * @param violatingEntities La liste des entités en violation
+     * @param violatingEntities La liste des entités en anomalie
      * @return Le nombre d'alertes générées
      */
     private int generateAlerts(Rule rule, TranslatedQuery query, List<String> violatingEntities) {

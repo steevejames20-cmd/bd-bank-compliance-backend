@@ -18,3 +18,12 @@ spring:
 
   # Désactiver la configuration secondaire pour les tests
   # On utilisera un mock pour la bd_bank dans les tests de persistance
+
+# Désactiver les runners de démarrage pour les tests
+# pour éviter les connexions à la base MySQL réelle
+bdbank:
+  startup:
+    checks:
+      enabled: false
+  scope:
+    tables:

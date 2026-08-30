@@ -38,7 +38,7 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findListByRuleIdAndStatus(Long ruleId, AlertStatus status);
 
     /**
-     * Trouve une alerte par sa règle et l'entité en violation.
+     * Trouve une alerte par sa règle et l'entité en anomalie.
      * Utile pour l'auto-résolution : vérifier si une alerte existe déjà pour cette combinaison.
      */
     Optional<Alert> findByRuleIdAndViolatingEntityId(Long ruleId, String violatingEntityId);
@@ -66,7 +66,7 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
 
     /**
      * Trouve toutes les alertes actives pour une règle donnée et un ensemble d'entités.
-     * Utile pour l'auto-résolution : identifier les alertes actives correspondant aux entités encore en violation.
+     * Utile pour l'auto-résolution : identifier les alertes actives correspondant aux entités encore en anomalie.
      */
     List<Alert> findByRuleIdAndStatusAndViolatingEntityIdIn(Long ruleId, AlertStatus status, List<String> violatingEntityIds);
 

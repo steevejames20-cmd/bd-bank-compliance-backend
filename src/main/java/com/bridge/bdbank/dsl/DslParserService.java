@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * Point d'entrée du moteur DSL : transforme une règle écrite en texte
- * (ex. "clients.age > 18", "comptes.solde > comptes.decouvert_autorise",
+ * (ex. "clients.age < 18", "comptes.solde < comptes.decouvert_autorise",
  * "SUM(transactions.montant) > 1000 GROUP BY client_id") en
  * {@link ParsedRule} exploitable par le reste de l'application.
  * <p>

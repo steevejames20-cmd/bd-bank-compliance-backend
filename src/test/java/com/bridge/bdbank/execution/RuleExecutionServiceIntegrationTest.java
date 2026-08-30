@@ -70,7 +70,7 @@ class RuleExecutionServiceIntegrationTest {
         List<Alert> alertesApresCycle2 = alertRepository.findListByRuleIdAndStatus(savedRule.getId(), AlertStatus.ACTIVE);
         assertThat(alertesApresCycle2).hasSize(2);
 
-        // 5. Simuler l'auto-résolution : l'entité "1" n'est plus en violation
+        // 5. Simuler l'auto-résolution : l'entité "1" n'est plus en anomalie
         alerte1.setStatus(AlertStatus.RESOLVED);
         alertRepository.save(alerte1);
 

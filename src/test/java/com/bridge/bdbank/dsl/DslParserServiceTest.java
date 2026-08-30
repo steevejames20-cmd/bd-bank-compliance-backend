@@ -13,16 +13,18 @@ class DslParserServiceTest {
 
     @Test
     void devraitParserUneConditionSansPrefixeDeTable() {
-        ParsedRule result = parser.parse("age > 18");
+        // Anomalie: âge < 18 (mineurs)
+        ParsedRule result = parser.parse("age < 18");
 
         assertThat(result.condition().left()).isEqualTo(new ColumnOperand(null, "age"));
-        assertThat(result.condition().operator()).isEqualTo(ComparisonOperator.GT);
+        assertThat(result.condition().operator()).isEqualTo(ComparisonOperator.LT);
         assertThat(result.condition().right()).isEqualTo(new LiteralOperand(18L));
         assertThat(result.relation()).isNull();
     }
 
     @Test
     void devraitParserUneConditionAvecPrefixeDeTable() {
+        // Anomalie: âge >= 18 (adultes, si on cherche les mineurs c'est l'inverse)
         ParsedRule result = parser.parse("clients.age >= 18");
 
         assertThat(result.condition().left()).isEqualTo(new ColumnOperand("clients", "age"));
@@ -55,16 +57,18 @@ class DslParserServiceTest {
 
     @Test
     void devraitParserUneComparaisonEntreDeuxColonnesDeLaMemeTable() {
-        ParsedRule result = parser.parse("comptes.solde > comptes.decouvert_autorise");
+        // Anomalie: solde < decouvert_autorise (comptes sous le découvert autorisé)
+        ParsedRule result = parser.parse("comptes.solde < comptes.decouvert_autorise");
 
         assertThat(result.condition().left()).isEqualTo(new ColumnOperand("comptes", "solde"));
-        assertThat(result.condition().operator()).isEqualTo(ComparisonOperator.GT);
+        assertThat(result.condition().operator()).isEqualTo(ComparisonOperator.LT);
         assertThat(result.condition().right()).isEqualTo(new ColumnOperand("comptes", "decouvert_autorise"));
     }
 
     @Test
     void devraitParserUneComparaisonEntreColonnesDeDeuxTablesDifferentes() {
-        ParsedRule result = parser.parse("transactions.montant > comptes.solde");
+        // Anomalie: montant < solde (transactions inférieures au solde du compte)
+        ParsedRule result = parser.parse("transactions.montant < comptes.solde");
 
         assertThat(result.condition().left()).isEqualTo(new ColumnOperand("transactions", "montant"));
         assertThat(result.condition().right()).isEqualTo(new ColumnOperand("comptes", "solde"));
@@ -74,6 +78,7 @@ class DslParserServiceTest {
 
     @Test
     void devraitParserUnAgregatSum() {
+        // Anomalie: somme > 1000 (transactions avec somme élevée)
         ParsedRule result = parser.parse("SUM(transactions.montant) > 1000");
 
         assertThat(result.condition().left()).isEqualTo(
@@ -97,6 +102,7 @@ class DslParserServiceTest {
 
     @Test
     void devraitParserUneClauseOn() {
+        // Anomalie: quantité > quantité_disponible (surstock)
         ParsedRule result = parser.parse("commandes.quantite > stock.quantite_disponible ON commandes.produit_id == stock.produit_id");
 
         assertThat(result.relation()).isEqualTo(new JoinRelation(
@@ -108,6 +114,7 @@ class DslParserServiceTest {
 
     @Test
     void devraitParserUneClauseGroupBy() {
+        // Anomalie: somme > 1000 (clients avec somme élevée)
         ParsedRule result = parser.parse("SUM(transactions.montant) > 1000 GROUP BY client_id");
 
         assertThat(result.relation()).isEqualTo(new GroupByRelation("client_id"));
@@ -124,7 +131,7 @@ class DslParserServiceTest {
 
     @Test
     void devraitEchouerSurUneRegleIncomplete() {
-        assertThatThrownBy(() -> parser.parse("age >"))
+        assertThatThrownBy(() -> parser.parse("age <"))
                 .isInstanceOf(DslSyntaxException.class);
     }
 
@@ -136,7 +143,7 @@ class DslParserServiceTest {
 
     @Test
     void devraitEchouerSurDuTexteEnTropApresLaCondition() {
-        assertThatThrownBy(() -> parser.parse("age > 18 en_trop"))
+        assertThatThrownBy(() -> parser.parse("age < 18 en_trop"))
                 .isInstanceOf(DslSyntaxException.class);
     }
 

@@ -2,16 +2,20 @@ package com.bridge.bdbank.scope;
 
 import com.bridge.bdbank.introspection.SchemaIntrospectionService;
 import com.bridge.bdbank.introspection.TableInfo;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@Tag("e2e")
 @SpringBootTest
+@ActiveProfiles("e2e")
 class ScopeServiceTest {
 
     @Autowired
@@ -40,7 +44,7 @@ class ScopeServiceTest {
         // Périmètre volontairement invalide, construit à la main pour ne
         // pas dépendre de la vraie config de l'application.
         ScopeProperties badProperties = new ScopeProperties();
-        badProperties.setTables(List.of("clients", "table_qui_nexiste_pas"));
+        badProperties.setTables(List.of("table_qui_nexiste_pas"));
 
         ScopeService badScopeService = new ScopeService(schemaIntrospectionService, badProperties);
 

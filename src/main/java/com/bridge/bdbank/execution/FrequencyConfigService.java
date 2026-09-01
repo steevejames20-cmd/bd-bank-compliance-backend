@@ -1,5 +1,6 @@
 package com.bridge.bdbank.execution;
 
+import com.bridge.bdbank.api.dto.FrequencyConfigRequest;
 import com.bridge.bdbank.persistence.FrequencyConfig;
 import com.bridge.bdbank.persistence.FrequencyConfigRepository;
 import com.bridge.bdbank.persistence.FrequencyConfig.FrequencyType;
@@ -237,6 +238,101 @@ public class FrequencyConfigService {
         String[] parts = cronExpression.trim().split("\\s+");
         // Accepte les expressions cron standard (6 champs) ou avec secondes (7 champs)
         return parts.length == 6 || parts.length == 7;
+    }
+
+    /**
+     * Met à jour la configuration de fréquence à partir d'un DTO.
+     * Crée ou met à jour la configuration active.
+     * 
+     * @param request La requête de configuration
+     * @return La configuration mise à jour
+     * @throws IllegalArgumentException si la configuration est invalide
+     */
+    @Transactional
+    public FrequencyConfig updateConfig(FrequencyConfigRequest request) {
+        // Déterminer le type de fréquence à partir de la requête
+        FrequencyType type;
+        Integer intervalMinutes = null;
+        String cronExpression = null;
+        
+        if (request.getInterval() != null && !request.getInterval().isEmpty()) {
+            // Format: "5m", "1h", "30m"
+            type = FrequencyType.INTERVAL;
+            intervalMinutes = parseInterval(request.getInterval());
+        } else if (request.getCronExpression() != null && !request.getCronExpression().isEmpty()) {
+            type = FrequencyType.CRON;
+            cronExpression = request.getCronExpression();
+        } else {
+            throw new IllegalArgumentException("Soit l'intervalle soit l'expression cron doit être fourni");
+        }
+        
+        // Vérifier si une configuration active existe
+        Optional<FrequencyConfig> existingActive = frequencyConfigRepository.findByActiveTrue();
+        
+        if (existingActive.isPresent()) {
+            // Mettre à jour la configuration existante
+            FrequencyConfig existing = existingActive.get();
+            existing.setType(type);
+            existing.setIntervalMinutes(intervalMinutes);
+            existing.setCronExpression(cronExpression);
+            existing.setActive(true);
+            return frequencyConfigRepository.save(existing);
+        } else {
+            // Créer une nouvelle configuration
+            FrequencyConfig newConfig = FrequencyConfig.builder()
+                .type(type)
+                .intervalMinutes(intervalMinutes)
+                .cronExpression(cronExpression)
+                .active(true)
+                .build();
+            return createConfig(newConfig);
+        }
+    }
+    
+    /**
+     * Parse une chaîne d'intervalle en minutes.
+     * Supporte les formats: "5m", "1h", "30m", "2h30m"
+     * 
+     * @param interval La chaîne d'intervalle
+     * @return Le nombre de minutes
+     * @throws IllegalArgumentException si le format est invalide
+     */
+    private int parseInterval(String interval) {
+        interval = interval.toLowerCase().trim();
+        int totalMinutes = 0;
+        
+        // Extraire les heures
+        int hIndex = interval.indexOf('h');
+        if (hIndex != -1) {
+            String hoursStr = interval.substring(0, hIndex);
+            try {
+                int hours = Integer.parseInt(hoursStr);
+                totalMinutes += hours * 60;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Format d'intervalle invalide: " + interval);
+            }
+            interval = interval.substring(hIndex + 1);
+        }
+        
+        // Extraire les minutes
+        int mIndex = interval.indexOf('m');
+        if (mIndex != -1) {
+            String minutesStr = interval.substring(0, mIndex);
+            try {
+                int minutes = Integer.parseInt(minutesStr);
+                totalMinutes += minutes;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Format d'intervalle invalide: " + interval);
+            }
+        }
+        
+        if (totalMinutes < MINIMUM_INTERVAL_MINUTES) {
+            throw new IllegalArgumentException(
+                String.format("L'intervalle minimum est de %d minutes (valeur fournie: %d)", 
+                    MINIMUM_INTERVAL_MINUTES, totalMinutes));
+        }
+        
+        return totalMinutes;
     }
 
     /**

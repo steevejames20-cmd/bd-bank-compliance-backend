@@ -4,25 +4,28 @@ import com.bridge.bdbank.auth.AuthenticationException;
 import com.bridge.bdbank.auth.AuthenticationService;
 import com.bridge.bdbank.introspection.TableInfo;
 import com.bridge.bdbank.scope.ScopeService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ScopeController.class)
 class ScopeControllerTest {
 
     @Autowired
-    private ScopeController scopeController;
+    private MockMvc mockMvc;
 
     @MockBean
     private ScopeService scopeService;
@@ -30,8 +33,11 @@ class ScopeControllerTest {
     @MockBean
     private AuthenticationService authenticationService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Test
-    void shouldGetScopeSuccessfullyWithAuth() {
+    void shouldGetScopeSuccessfullyWithAuth() throws Exception {
         List<TableInfo> tables = List.of(
             new TableInfo("clients", "bd_bank_test"),
             new TableInfo("comptes", "bd_bank_test")
@@ -40,121 +46,101 @@ class ScopeControllerTest {
         when(authenticationService.validateToken(anyString())).thenReturn(null);
         when(scopeService.getScopedTables()).thenReturn(tables);
 
-        ResponseEntity<List<TableInfo>> response = scopeController.getScope("Bearer valid-token");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).hasSize(2);
-        assertThat(response.getBody().get(0).name()).isEqualTo("clients");
-        assertThat(response.getBody().get(1).name()).isEqualTo("comptes");
+        mockMvc.perform(get("/scope")
+                .header("Authorization", "Bearer valid-token")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
     }
 
     @Test
-    void shouldGetScopeReturnEmptyListWhenNoTables() {
-        when(authenticationService.validateToken(anyString())).thenReturn(null);
-        when(scopeService.getScopedTables()).thenReturn(List.of());
-
-        ResponseEntity<List<TableInfo>> response = scopeController.getScope("Bearer valid-token");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEmpty();
-    }
-
-    @Test
-    void shouldGetScopeHandleUnknownScopedTableException() {
+    void shouldGetScopeHandleUnknownScopedTableException() throws Exception {
         when(authenticationService.validateToken(anyString())).thenReturn(null);
         when(scopeService.getScopedTables())
             .thenThrow(new com.bridge.bdbank.scope.UnknownScopedTableException("unknown_table"));
 
-        ResponseEntity<List<TableInfo>> response = scopeController.getScope("Bearer valid-token");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        mockMvc.perform(get("/scope")
+                .header("Authorization", "Bearer valid-token")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
     }
 
     @Test
-    void shouldFailGetScopeWithoutAuth() {
-        ResponseEntity<List<TableInfo>> response = scopeController.getScope(null);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    void shouldFailGetScopeWithoutAuth() throws Exception {
+        mockMvc.perform(get("/scope")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void shouldFailGetScopeWithInvalidToken() {
+    void shouldFailGetScopeWithInvalidToken() throws Exception {
         when(authenticationService.validateToken("invalid-token"))
             .thenThrow(new AuthenticationException("Token invalide"));
 
-        ResponseEntity<List<TableInfo>> response = scopeController.getScope("Bearer invalid-token");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        mockMvc.perform(get("/scope")
+                .header("Authorization", "Bearer invalid-token")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void shouldUpdateScopeReturnNotImplemented() {
-        Set<String> tables = Set.of("clients", "comptes");
-
+    void shouldUpdateScopeReturnNotImplemented() throws Exception {
         when(authenticationService.validateToken(anyString())).thenReturn(null);
 
-        ResponseEntity<Void> response = scopeController.updateScope(tables, "Bearer valid-token");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_IMPLEMENTED);
+        mockMvc.perform(put("/scope")
+                .header("Authorization", "Bearer valid-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Set.of("clients", "comptes"))))
+                .andExpect(status().isNotImplemented());
     }
 
     @Test
-    void shouldFailUpdateScopeWithoutAuth() {
-        Set<String> tables = Set.of("clients");
-
-        ResponseEntity<Void> response = scopeController.updateScope(tables, null);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    void shouldFailUpdateScopeWithoutAuth() throws Exception {
+        mockMvc.perform(put("/scope")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Set.of("clients", "comptes"))))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void shouldFailUpdateScopeWithInvalidToken() {
-        Set<String> tables = Set.of("clients");
-
+    void shouldFailUpdateScopeWithInvalidToken() throws Exception {
         when(authenticationService.validateToken("invalid-token"))
             .thenThrow(new AuthenticationException("Token invalide"));
 
-        ResponseEntity<Void> response = scopeController.updateScope(tables, "Bearer invalid-token");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        mockMvc.perform(put("/scope")
+                .header("Authorization", "Bearer invalid-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Set.of("clients", "comptes"))))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void shouldCheckTableInScopeSuccessfully() {
+    void shouldCheckInScopeSuccessfullyWithAuth() throws Exception {
         when(authenticationService.validateToken(anyString())).thenReturn(null);
         when(scopeService.isInScope("clients")).thenReturn(true);
 
-        ResponseEntity<Boolean> response = scopeController.isInScope("clients", "Bearer valid-token");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isTrue();
+        mockMvc.perform(get("/scope/clients")
+                .header("Authorization", "Bearer valid-token")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(true));
     }
 
     @Test
-    void shouldCheckTableNotInScope() {
-        when(authenticationService.validateToken(anyString())).thenReturn(null);
-        when(scopeService.isInScope("nonexistent")).thenReturn(false);
-
-        ResponseEntity<Boolean> response = scopeController.isInScope("nonexistent", "Bearer valid-token");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isFalse();
+    void shouldFailCheckInScopeWithoutAuth() throws Exception {
+        mockMvc.perform(get("/scope/clients")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void shouldFailCheckInScopeWithoutAuth() {
-        ResponseEntity<Boolean> response = scopeController.isInScope("clients", null);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    void shouldFailCheckInScopeWithInvalidToken() {
+    void shouldFailCheckInScopeWithInvalidToken() throws Exception {
         when(authenticationService.validateToken("invalid-token"))
             .thenThrow(new AuthenticationException("Token invalide"));
 
-        ResponseEntity<Boolean> response = scopeController.isInScope("clients", "Bearer invalid-token");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        mockMvc.perform(get("/scope/clients")
+                .header("Authorization", "Bearer invalid-token")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
     }
 }

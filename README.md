@@ -1,13 +1,14 @@
 # bd-bank-compliance-backend
 
-Outil de vérification de conformité des données — Bridge bd_bank.
+Bridge bd_bank est un outil interne qui vérifie des règles métier sur des
+données bancaires sans exposer la base au frontend.
 
 Backend Java (Spring Boot) qui traduit des règles métier écrites en DSL en
 requêtes SQL, les exécute en lecture seule sur la base d'une banque
 (bd_bank), et génère des alertes en cas d'anomalie détectée.
 
-Le détail du fonctionnement, de la roadmap et du contrat d'API se trouve
-dans le dossier [`docs/`](./docs) (ajouté sur la branche `jour-01-init-projet`).
+Le fonctionnement détaillé, la roadmap et le contrat d'API sont décrits dans
+[`docs/`](./docs).
 
 ## Démarrage local (J1)
 
@@ -90,3 +91,35 @@ connexion au démarrage.
 Une branche par journée de travail de la roadmap, nommée `jour-XX-slug`
 (ex. `jour-01-init-projet`, `jour-02-connexion-jdbc`). Chaque branche est
 mergée dans `main` une fois l'objectif du jour validé.
+
+## Démarrage du frontend
+
+Dans un second terminal, depuis le dossier `Frontend` :
+
+```powershell
+cd Frontend
+npm install
+npm run dev
+```
+
+Le frontend est disponible sur `http://127.0.0.1:5173`. Pour utiliser l'API
+réelle, `Frontend/.env` doit contenir `VITE_API_URL=http://localhost:8080` et
+`VITE_DEMO_MODE=false`.
+
+## Initialisation du compte administrateur
+
+Le projet est prévu pour un seul administrateur. Si aucun utilisateur n'existe
+encore, définir une clé privée dans `.env` :
+
+```env
+BDBANK_SETUP_KEY=une-valeur-longue-et-secrete
+```
+
+Redémarrer Spring Boot, puis ouvrir directement `http://127.0.0.1:5173/setup`.
+Le formulaire demande cette clé, un identifiant valide et un mot de passe d'au
+moins 12 caractères. L'endpoint `/auth/setup` est refusé dès qu'un compte
+existe et n'est pas affiché dans la navigation.
+
+Après l'initialisation, se connecter sur `http://127.0.0.1:5173/`. Les routes
+protégées utilisent le token Bearer retourné par `/auth/login`; une session est
+invalidée au logout et expire après 15 minutes sans activité.

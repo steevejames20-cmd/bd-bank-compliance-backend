@@ -2,6 +2,8 @@ package com.bridge.bdbank.scope;
 
 import com.bridge.bdbank.introspection.SchemaIntrospectionService;
 import com.bridge.bdbank.introspection.TableInfo;
+import com.bridge.bdbank.persistence.Scope;
+import com.bridge.bdbank.persistence.ScopeRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +11,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.stream.Collectors;
 
 /**
@@ -27,6 +32,12 @@ public class ScopeService {
 
     private final SchemaIntrospectionService schemaIntrospectionService;
     private final ScopeProperties scopeProperties;
+    private ScopeRepository scopeRepository;
+
+    @Autowired
+    public void setScopeRepository(ScopeRepository scopeRepository) {
+        this.scopeRepository = scopeRepository;
+    }
 
     /**
      * Retourne les tables du périmètre, validées contre le schéma réel.
@@ -40,7 +51,11 @@ public class ScopeService {
                 .map(TableInfo::name)
                 .collect(Collectors.toSet());
 
-        List<String> declaredScope = scopeProperties.getTables();
+        List<String> declaredScope = scopeRepository == null
+            ? scopeProperties.getTables()
+            : scopeRepository.findByActiveTrue()
+                .map(scope -> scope.getTables().stream().toList())
+                .orElse(scopeProperties.getTables());
 
         for (String tableName : declaredScope) {
             if (!allTableNames.contains(tableName)) {
@@ -55,6 +70,32 @@ public class ScopeService {
         log.info("Périmètre surveillé : {} table(s) -> {}",
                 scoped.size(), scoped.stream().map(TableInfo::name).toList());
         return scoped;
+    }
+
+    @Transactional
+    public void updateScope(Set<String> tables) {
+        if (tables == null || tables.isEmpty()) {
+            throw new IllegalArgumentException("Le périmètre doit contenir au moins une table");
+        }
+
+        Set<String> availableTables = schemaIntrospectionService.listTables().stream()
+                .map(TableInfo::name)
+                .collect(Collectors.toSet());
+        for (String table : tables) {
+            if (!availableTables.contains(table)) {
+                throw new UnknownScopedTableException(table);
+            }
+        }
+
+        if (scopeRepository == null) {
+            throw new IllegalStateException("La persistance du périmètre n'est pas disponible");
+        }
+        scopeRepository.deactivateAll();
+        Scope scope = scopeRepository.findByName("default").orElseGet(() -> Scope.builder().name("default").build());
+        scope.setDescription("Périmètre principal de surveillance");
+        scope.setTables(new HashSet<>(tables));
+        scope.setActive(true);
+        scopeRepository.save(scope);
     }
 
     /**

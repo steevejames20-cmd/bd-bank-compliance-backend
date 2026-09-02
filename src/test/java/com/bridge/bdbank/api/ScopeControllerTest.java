@@ -84,14 +84,14 @@ class ScopeControllerTest {
     }
 
     @Test
-    void shouldUpdateScopeReturnNotImplemented() throws Exception {
+    void shouldUpdateScopeSuccessfully() throws Exception {
         when(authenticationService.validateToken(anyString())).thenReturn(null);
 
         mockMvc.perform(put("/scope")
                 .header("Authorization", "Bearer valid-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Set.of("clients", "comptes"))))
-                .andExpect(status().isNotImplemented());
+                .andExpect(status().isOk());
     }
 
     @Test

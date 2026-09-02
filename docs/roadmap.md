@@ -20,8 +20,8 @@ testable), pas juste une liste de tâches.
 **SEMAINE 1 --- Fondations --- Connexion & introspection de la bd_bank**
 
 +----------+-----------------------------------------------------------+
-| _| **Tâches** |
-| _Jours__ | |
+| \_| **Tâches** |
+| \_Jours\_\_ | |
 +==========+===========================================================+
 | **J1** | - Initialisation du projet Java (structure du repo, |
 | | gestion de dépendances Maven/Gradle) |
@@ -50,7 +50,7 @@ testable), pas juste une liste de tâches.
 | | - Gestion des erreurs de connexion (base injoignable, |
 | | identifiants invalides, etc.) |
 +----------+-----------------------------------------------------------+
-| **J5\*\* | - Mise en place du mécanisme de déclaration du |
+| \*\*J5\*\* | - Mise en place du mécanisme de déclaration du |
 | | périmètre (sélection des tables à surveiller) |
 | | |
 | | - Tests unitaires de la couche de connexion et |
@@ -64,8 +64,8 @@ testable), pas juste une liste de tâches.
 **SEMAINE 2 --- Le cœur du moteur --- DSL et traduction en SQL**
 
 +----------+-----------------------------------------------------------+
-| _| **Tâches** |
-| _Jours__ | |
+| \_| **Tâches** |
+| \_Jours\_\_ | |
 +==========+===========================================================+
 | **J6** | - Conception de la grammaire du DSL (syntaxe des règles |
 | | ligne-à-ligne : ex age \> 18) |
@@ -92,7 +92,7 @@ testable), pas juste une liste de tâches.
 | | - Gestion des relations explicites entre tables écrites |
 | | par l\'admin |
 +----------+-----------------------------------------------------------+
-| **J10\*\* | - Validation syntaxique immédiate à la saisie (retour |
+| \*\*J10\*\* | - Validation syntaxique immédiate à la saisie (retour |
 | | d\'erreur clair si règle invalide ou colonne |
 | | inexistante) |
 | | |
@@ -114,8 +114,8 @@ terminée. Il peut ainsi démarrer son intégration contre une API simulée
 **SEMAINE 3 --- Détection, alertes & persistance**
 
 +----------+-----------------------------------------------------------+
-| _| **Tâches** |
-| _Jours__ | |
+| \_| **Tâches** |
+| \_Jours\_\_ | |
 +==========+===========================================================+
 | **J11** | - Modélisation des entités : Règle (avec gravité), |
 | | Alerte (avec statut actif/résolu), Périmètre |
@@ -140,7 +140,7 @@ terminée. Il peut ainsi démarrer son intégration contre une API simulée
 | | fréquence globale : intervalle simple + support |
 | | d\'une expression cron, avec minimum 3 minutes imposé |
 +----------+-----------------------------------------------------------+
-| **J15\*\* | - Tests de bout en bout sur plusieurs cycles |
+| \*\*J15\*\* | - Tests de bout en bout sur plusieurs cycles |
 | | d\'exécution successifs (apparition, persistance, |
 | | résolution d\'une alerte) |
 | | |
@@ -156,8 +156,8 @@ terminée. Il peut ainsi démarrer son intégration contre une API simulée
 **SEMAINE 4 --- API REST --- Endpoints & sécurité applicative**
 
 +----------+-----------------------------------------------------------+
-| _| **Tâches** |
-| _Jours__ | |
+| \_| **Tâches** |
+| \_Jours\_\_ | |
 +==========+===========================================================+
 | **J16** | - Mise en place de l\'authentification (POST |
 | | /auth/login, /auth/logout, /auth/me) avec token de |
@@ -184,7 +184,7 @@ terminée. Il peut ainsi démarrer son intégration contre une API simulée
 | | - Endpoints de configuration de fréquence (GET/PUT |
 | | /config/frequency) |
 +----------+-----------------------------------------------------------+
-| **J20\*\* | - Standardisation du format d\'erreur JSON sur toutes |
+| \*\*J20\*\* | - Standardisation du format d\'erreur JSON sur toutes |
 | | les routes |
 | | |
 | | - Documentation de l\'API (Swagger/OpenAPI) livrée au |
@@ -198,8 +198,8 @@ terminée. Il peut ainsi démarrer son intégration contre une API simulée
 **SEMAINE 5 --- Consolidation, tests globaux & finitions**
 
 +----------+-----------------------------------------------------------+
-| _| **Tâches** |
-| _Jours__ | |
+| \_| **Tâches** |
+| \_Jours\_\_ | |
 +==========+===========================================================+
 | **J21** | - Rejeu de scénarios de test complets : règles |
 | | ligne-à-ligne, règles agrégat multi-tables, cas du |
@@ -221,7 +221,7 @@ terminée. Il peut ainsi démarrer son intégration contre une API simulée
 | | |
 | | - Nettoyage du code et des tests |
 +----------+-----------------------------------------------------------+
-| **J25\*\* | - Démonstration complète de bout en bout via l\'API |
+| \*\*J25\*\* | - Démonstration complète de bout en bout via l\'API |
 | | (scénario réaliste avec plusieurs règles et anomalies |
 | | volontaires) |
 | | |

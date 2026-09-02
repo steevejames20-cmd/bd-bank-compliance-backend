@@ -7,8 +7,10 @@ Backend Java (Spring Boot) qui traduit des règles métier écrites en DSL en
 requêtes SQL, les exécute en lecture seule sur la base d'une banque
 (bd_bank), et génère des alertes en cas d'anomalie détectée.
 
-Le fonctionnement détaillé, la roadmap et le contrat d'API sont décrits dans
-[`docs/`](./docs).
+Le projet expose une API REST pour gérer les règles, les alertes, le schéma,
+le périmètre et la fréquence d'analyse. Le détail des routes est disponible
+dans Swagger après le démarrage du backend, à l'adresse
+`http://localhost:8080/swagger-ui.html`.
 
 ## Démarrage local (J1)
 
@@ -43,10 +45,9 @@ Le fonctionnement détaillé, la roadmap et le contrat d'API sont décrits dans
    mvn test
    ```
 
-> Le compte MySQL utilisé ici (`DB_USER`/`DB_PASSWORD`) a des droits larges
-> pour permettre le seed initial. Le compte technique dédié en lecture seule
-> (SELECT uniquement), tel que décrit dans `docs/schema-fonctionnement.md`,
-> sera mis en place en J2.
+> Le compte MySQL utilisé ici (`DB_USER`/`DB_PASSWORD`) est le compte technique
+> dédié à l'application. Il est limité à la lecture (`SELECT`) sur la base de
+> test et ne doit pas être utilisé pour modifier les données.
 
 ## J2 — Compte lecture seule + couche de connexion JDBC
 

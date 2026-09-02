@@ -38,3 +38,6 @@ Frontend/.vite/
 
 # === Outils de test et navigation locaux ===
 .playwright-mcp/
+
+# === Notes et documents de travail locaux ===
+docs/

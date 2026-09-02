@@ -7,6 +7,12 @@ import com.bridge.bdbank.auth.AuthenticationService;
 import com.bridge.bdbank.execution.FrequencyConfigService;
 import com.bridge.bdbank.persistence.FrequencyConfig;
 import com.bridge.bdbank.persistence.FrequencyConfigRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +24,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/config")
 @RequiredArgsConstructor
+@Tag(name = "Configuration", description = "Configuration de l'application")
+@SecurityRequirement(name = "bearerAuth")
 public class ConfigController {
 
     private final FrequencyConfigRepository frequencyConfigRepository;
@@ -28,40 +36,46 @@ public class ConfigController {
      * Récupère la configuration de fréquence actuelle.
      * GET /config/frequency
      */
+    @Operation(summary = "Récupérer la configuration de fréquence", description = "Récupère la configuration actuelle de fréquence d'exécution")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Configuration récupérée avec succès"),
+        @ApiResponse(responseCode = "401", description = "Non authentifié"),
+        @ApiResponse(responseCode = "404", description = "Aucune configuration active trouvée"),
+        @ApiResponse(responseCode = "500", description = "Erreur interne du serveur")
+    })
     @GetMapping("/frequency")
     public ResponseEntity<FrequencyConfigResponse> getFrequencyConfig(
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        try {
-            authenticate(authHeader);
-            
-            return frequencyConfigRepository.findByActiveTrue()
-                .map(config -> ResponseEntity.ok(toResponse(config)))
-                .orElse(ResponseEntity.status(404).build());
-        } catch (AuthenticationException e) {
-            return ResponseEntity.status(401).build();
-        }
+        
+        authenticate(authHeader);
+        
+        return frequencyConfigRepository.findByActiveTrue()
+            .map(config -> ResponseEntity.ok(toResponse(config)))
+            .orElse(ResponseEntity.status(404).build());
     }
 
     /**
      * Met à jour la configuration de fréquence.
      * PUT /config/frequency
      */
+    @Operation(summary = "Mettre à jour la configuration de fréquence", description = "Met à jour la configuration de fréquence d'exécution")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Configuration mise à jour avec succès"),
+        @ApiResponse(responseCode = "400", description = "Requête invalide"),
+        @ApiResponse(responseCode = "401", description = "Non authentifié"),
+        @ApiResponse(responseCode = "500", description = "Erreur interne du serveur")
+    })
     @PutMapping("/frequency")
     public ResponseEntity<FrequencyConfigResponse> updateFrequencyConfig(
-            @RequestBody FrequencyConfigRequest request,
+            @Parameter(description = "Configuration de fréquence à mettre à jour") @RequestBody FrequencyConfigRequest request,
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        try {
-            authenticate(authHeader);
-            
-            // Utiliser le service pour mettre à jour la configuration
-            FrequencyConfig updatedConfig = frequencyConfigService.updateConfig(request);
-            
-            return ResponseEntity.ok(toResponse(updatedConfig));
-        } catch (AuthenticationException e) {
-            return ResponseEntity.status(401).build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).build();
-        }
+        
+        authenticate(authHeader);
+        
+        // Utiliser le service pour mettre à jour la configuration
+        FrequencyConfig updatedConfig = frequencyConfigService.updateConfig(request);
+        
+        return ResponseEntity.ok(toResponse(updatedConfig));
     }
 
     /**

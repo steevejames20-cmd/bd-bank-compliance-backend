@@ -20,6 +20,11 @@
 
 ## **1. Authentification**
 
+L'endpoint d'initialisation `POST /auth/setup` est réservé au premier
+démarrage. Il exige l'en-tête serveur `X-Setup-Key` correspondant à
+`BDBANK_SETUP_KEY` et est refusé dès qu'un utilisateur existe. Il ne fait pas
+partie du parcours de navigation normal.
+
   -----------------------------------------------------------------------------
   **Méthode**   **Endpoint**           **Description**
   ------------- ---------------------- ----------------------------------------
@@ -46,7 +51,7 @@
                                                  pour surveillance)
 
   **PUT**       /scope                           Modifie le périmètre (ajout/retrait de
-                                                 tables)
+                                                tables), avec validation du schéma réel
   --------------------------------------------------------------------------------------
 
 ## **3. Règles**

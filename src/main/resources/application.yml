@@ -32,6 +32,7 @@ server:
 # Chaque table déclarée doit exister réellement dans la bd_bank, sinon
 # l'application refuse de démarrer (voir ScopeService).
 bdbank:
+  setup-key: ${BDBANK_SETUP_KEY:}
   scope:
     tables: ${BDBANK_SCOPE_TABLES:clients,comptes,transactions}
 

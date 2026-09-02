@@ -28,3 +28,13 @@ logs/
 
 # === Données locales de la base de test (volumes Docker éventuels) ===
 mysql-data/
+data/*.mv.db
+data/*.trace.db
+
+# === Frontend ===
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.vite/
+
+# === Outils de test et navigation locaux ===
+.playwright-mcp/

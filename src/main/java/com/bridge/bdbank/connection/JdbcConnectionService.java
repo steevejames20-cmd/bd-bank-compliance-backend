@@ -1,6 +1,5 @@
 package com.bridge.bdbank.connection;
 
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -24,13 +23,15 @@ import java.sql.SQLException;
  * H2 utilisée pour la persistance interne.
  */
 @Service
-@RequiredArgsConstructor
 public class JdbcConnectionService {
 
     private static final Logger log = LoggerFactory.getLogger(JdbcConnectionService.class);
 
-    @Qualifier("bankDataSource")
     private final DataSource dataSource;
+
+    public JdbcConnectionService(@Qualifier("bankDataSource") DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
     /**
      * Ouvre une connexion via le pool et vérifie qu'elle est utilisable.

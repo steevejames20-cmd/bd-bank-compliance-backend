@@ -56,7 +56,7 @@ public class ScopeController {
      */
     @Operation(summary = "Mettre à jour le périmètre", description = "Met à jour les tables surveillées (non implémenté)")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "501", description = "Non implémenté"),
+        @ApiResponse(responseCode = "200", description = "Périmètre mis à jour"),
         @ApiResponse(responseCode = "401", description = "Non authentifié"),
         @ApiResponse(responseCode = "500", description = "Erreur interne du serveur")
     })
@@ -66,9 +66,8 @@ public class ScopeController {
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         authenticate(authHeader);
-        // Note: La mise à jour du périmètre nécessiterait de modifier ScopeProperties
-        // Pour l'instant, on retourne un statut 501 (Not Implemented)
-        return ResponseEntity.status(501).build();
+        scopeService.updateScope(tables);
+        return ResponseEntity.ok().build();
     }
 
     /**

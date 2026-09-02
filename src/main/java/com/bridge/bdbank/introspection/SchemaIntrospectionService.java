@@ -1,7 +1,6 @@
 package com.bridge.bdbank.introspection;
 
 import com.bridge.bdbank.connection.SqlErrorTranslator;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,13 +25,15 @@ import java.util.TreeMap;
  * bd_bank, distincte de la datasource principale H2 pour la persistance.
  */
 @Service
-@RequiredArgsConstructor
 public class SchemaIntrospectionService {
 
     private static final Logger log = LoggerFactory.getLogger(SchemaIntrospectionService.class);
 
-    @Qualifier("bankDataSource")
     private final DataSource dataSource;
+
+    public SchemaIntrospectionService(@Qualifier("bankDataSource") DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
     /**
      * Liste les tables "normales" (on exclut les vues et tables système)

@@ -2,20 +2,23 @@ package com.bridge.bdbank.auth;
 
 import com.bridge.bdbank.persistence.User;
 import com.bridge.bdbank.persistence.UserRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
  * Service d'authentification simplifié pour J17.
  * Implémente la validation basique des tokens et le blocage après 5 échecs.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AuthenticationService {
 
@@ -23,24 +26,30 @@ public class AuthenticationService {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private static final int MAX_FAILED_ATTEMPTS = 5;
     private static final int LOCK_DURATION_MINUTES = 30;
+    private static final Duration SESSION_IDLE_TIMEOUT = Duration.ofMinutes(15);
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9._-]{3,50}$");
+    private final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
+
+    public AuthenticationService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     /**
      * Valide un token de session.
      * Pour l'instant, version simplifiée qui vérifie juste le format.
      */
     public User validateToken(String token) {
-        // Version simplifiée : vérifie que le token n'est pas null/empty
         if (token == null || token.trim().isEmpty()) {
             throw new AuthenticationException("Token invalide");
         }
-        
-        // Pour le moment, on retourne un utilisateur par défaut
-        // Le système complet sera implémenté avec les entités User/UserSession
-        return User.builder()
-            .id(1L)
-            .username("admin")
-            .role("ADMIN")
-            .build();
+
+        Session session = sessions.get(token);
+        if (session == null || session.isExpired()) {
+            sessions.remove(token);
+            throw new AuthenticationException("Session expirée ou invalide");
+        }
+        session.touch();
+        return session.user;
     }
 
     /**
@@ -73,14 +82,46 @@ public class AuthenticationService {
             userRepository.save(user);
         }
         
-        // Version simplifiée : génère un token basique
-        return "token-" + System.currentTimeMillis();
+        String token = UUID.randomUUID().toString();
+        sessions.put(token, new Session(user, Instant.now()));
+        return token;
+    }
+
+    /**
+     * Crée le premier compte administrateur. Cette opération est volontairement
+     * disponible uniquement via le parcours d'initialisation protégé.
+     */
+    public synchronized void createInitialUser(String username, String password) {
+        if (userRepository.count() > 0) {
+            throw new AuthenticationException("Le compte administrateur existe déjà");
+        }
+        if (username == null || !USERNAME_PATTERN.matcher(username).matches()) {
+            throw new IllegalArgumentException("L'identifiant doit contenir 3 à 50 caractères alphanumériques");
+        }
+        if (password == null || password.length() < 12) {
+            throw new IllegalArgumentException("Le mot de passe doit contenir au moins 12 caractères");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        userRepository.save(User.builder()
+            .username(username)
+            .passwordHash(passwordEncoder.encode(password))
+            .role("ADMIN")
+            .active(true)
+            .failedLoginAttempts(0)
+            .createdAt(now)
+            .updatedAt(now)
+            .build());
     }
 
     /**
      * Déconnecte un utilisateur (version simplifiée).
      */
     public void logout(String token) {
+        if (token == null || token.isBlank()) {
+            throw new AuthenticationException("Token manquant");
+        }
+        sessions.remove(token);
         log.info("Logout pour le token: {}", token);
     }
 
@@ -89,6 +130,24 @@ public class AuthenticationService {
      */
     public User getUserInfo(String token) {
         return validateToken(token);
+    }
+
+    private static final class Session {
+        private final User user;
+        private volatile Instant lastActivity;
+
+        private Session(User user, Instant lastActivity) {
+            this.user = user;
+            this.lastActivity = lastActivity;
+        }
+
+        private boolean isExpired() {
+            return lastActivity.plus(SESSION_IDLE_TIMEOUT).isBefore(Instant.now());
+        }
+
+        private void touch() {
+            lastActivity = Instant.now();
+        }
     }
 
     /**

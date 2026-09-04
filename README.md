@@ -107,6 +107,16 @@ Le frontend est disponible sur `http://127.0.0.1:5173`. Pour utiliser l'API
 réelle, `Frontend/.env` doit contenir `VITE_API_URL=http://localhost:8080` et
 `VITE_DEMO_MODE=false`.
 
+En mode réel, le dashboard recharge les tables, le périmètre, les règles, les
+alertes et la fréquence depuis l'API. La posture de contrôle est calculée à
+partir du taux de règles actives, de la couverture du périmètre et du taux
+d'alertes résolues. Le bouton d'actualisation force un nouveau chargement.
+
+Depuis le détail d'une alerte, le bouton de statut permet de la marquer comme
+résolue ou de la réactiver automatiquement selon les cycles d'analyse. Pour
+activer ou désactiver une règle, utilisez l'action correspondante dans la liste
+des règles ; elle met à jour la règle via `PUT /rules/{id}`.
+
 ## Initialisation du compte administrateur
 
 Le projet est prévu pour un seul administrateur. Si aucun utilisateur n'existe

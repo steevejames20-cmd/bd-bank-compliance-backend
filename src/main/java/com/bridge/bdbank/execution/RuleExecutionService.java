@@ -9,9 +9,9 @@ import com.bridge.bdbank.persistence.Rule;
 import com.bridge.bdbank.persistence.RuleRepository;
 import com.bridge.bdbank.translation.RuleTranslator;
 import com.bridge.bdbank.translation.TranslatedQuery;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +31,6 @@ import java.util.List;
  * Les règles décrivent directement les anomalies à rechercher (ex: "solde < 0").
  */
 @Service
-@RequiredArgsConstructor
 public class RuleExecutionService {
 
     private static final Logger log = LoggerFactory.getLogger(RuleExecutionService.class);
@@ -41,6 +40,19 @@ public class RuleExecutionService {
     private final DslParserService dslParserService;
     private final RuleTranslator ruleTranslator;
     private final DataSource bankDataSource;
+
+    public RuleExecutionService(
+            RuleRepository ruleRepository,
+            AlertRepository alertRepository,
+            DslParserService dslParserService,
+            RuleTranslator ruleTranslator,
+            @Qualifier("bankDataSource") DataSource bankDataSource) {
+        this.ruleRepository = ruleRepository;
+        this.alertRepository = alertRepository;
+        this.dslParserService = dslParserService;
+        this.ruleTranslator = ruleTranslator;
+        this.bankDataSource = bankDataSource;
+    }
 
     /**
      * Exécute toutes les règles actives et génère les alertes correspondantes.

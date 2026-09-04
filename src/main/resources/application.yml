@@ -2,6 +2,11 @@ spring:
   application:
     name: bd-bank-compliance-backend
 
+  # Charge .env à la racine du projet (DB_HOST, DB_USER, etc.)
+  # même si le shell n'a pas sourcé le fichier au préalable.
+  config:
+    import: optional:file:.env[.properties]
+
   # Configuration JPA/Hibernate pour la persistance interne (J11)
   jpa:
     hibernate:

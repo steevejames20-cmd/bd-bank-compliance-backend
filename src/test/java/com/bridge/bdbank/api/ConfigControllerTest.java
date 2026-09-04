@@ -53,6 +53,7 @@ class ConfigControllerTest {
 
     @Test
     void shouldGetFrequencyConfigWithAuth() throws Exception {
+        LocalDateTime nextCycle = LocalDateTime.now().plusMinutes(5);
         FrequencyConfig config = FrequencyConfig.builder()
             .id(1L)
             .type(FrequencyType.INTERVAL)
@@ -63,13 +64,15 @@ class ConfigControllerTest {
             .build();
 
         when(frequencyConfigRepository.findByActiveTrue()).thenReturn(Optional.of(config));
+        when(frequencyConfigService.computeNextCycleAt(config)).thenReturn(nextCycle);
 
         mockMvc.perform(get("/config/frequency")
                 .header("Authorization", "Bearer valid-token")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.interval").value("5m"))
-                .andExpect(jsonPath("$.enabled").value("true"));
+                .andExpect(jsonPath("$.enabled").value("true"))
+                .andExpect(jsonPath("$.nextCycleAt").isNotEmpty());
     }
 
     @Test
@@ -88,6 +91,7 @@ class ConfigControllerTest {
             .interval("10m")
             .build();
 
+        LocalDateTime nextCycle = LocalDateTime.now().plusMinutes(10);
         FrequencyConfig updatedConfig = FrequencyConfig.builder()
             .id(1L)
             .type(FrequencyType.INTERVAL)
@@ -98,6 +102,7 @@ class ConfigControllerTest {
             .build();
 
         when(frequencyConfigService.updateConfig(any(FrequencyConfigRequest.class))).thenReturn(updatedConfig);
+        when(frequencyConfigService.computeNextCycleAt(updatedConfig)).thenReturn(nextCycle);
 
         mockMvc.perform(put("/config/frequency")
                 .header("Authorization", "Bearer valid-token")
@@ -105,7 +110,8 @@ class ConfigControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.interval").value("10m"))
-                .andExpect(jsonPath("$.enabled").value("true"));
+                .andExpect(jsonPath("$.enabled").value("true"))
+                .andExpect(jsonPath("$.nextCycleAt").isNotEmpty());
     }
 
     @Test
@@ -114,6 +120,7 @@ class ConfigControllerTest {
             .cronExpression("0 */5 * * * *")
             .build();
 
+        LocalDateTime nextCycle = LocalDateTime.now().plusMinutes(5);
         FrequencyConfig updatedConfig = FrequencyConfig.builder()
             .id(1L)
             .type(FrequencyType.CRON)
@@ -124,6 +131,7 @@ class ConfigControllerTest {
             .build();
 
         when(frequencyConfigService.updateConfig(any(FrequencyConfigRequest.class))).thenReturn(updatedConfig);
+        when(frequencyConfigService.computeNextCycleAt(updatedConfig)).thenReturn(nextCycle);
 
         mockMvc.perform(put("/config/frequency")
                 .header("Authorization", "Bearer valid-token")
@@ -131,7 +139,8 @@ class ConfigControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cronExpression").value("0 */5 * * * *"))
-                .andExpect(jsonPath("$.enabled").value("true"));
+                .andExpect(jsonPath("$.enabled").value("true"))
+                .andExpect(jsonPath("$.nextCycleAt").isNotEmpty());
     }
 
     @Test

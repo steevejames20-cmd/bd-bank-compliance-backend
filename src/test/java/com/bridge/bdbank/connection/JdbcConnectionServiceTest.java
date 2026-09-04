@@ -7,8 +7,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Vérifie que la couche de connexion fonctionne avec la datasource de test,
- * sans dépendre d'une base MySQL locale.
+ * Vérifie que la couche JDBC parle bien à la base de test MySQL
+ * (`bd_bank_test`, compte lecture seule).
+ *
+ * Prérequis : `docker compose up -d`.
  */
 @SpringBootTest(properties = {
     "bdbank.startup.checks.enabled=false",

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 /**
  * DTO pour la réponse de configuration de fréquence.
  */
@@ -14,7 +16,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FrequencyConfigResponse {
     
-    private String interval;        // ex: "5m", "1h", "30m"
-    private String cronExpression;  // ex: "0 */5 * * * *" pour tous les 5 minutes
-    private String enabled;          // "true" ou "false"
+    private String interval;            // ex: "5m", "1h", "30m"
+    private String cronExpression;      // ex: "0 */5 * * * *" pour tous les 5 minutes
+    private String enabled;             // "true" ou "false"
+    private LocalDateTime nextCycleAt;  // Date et heure du prochain cycle d'exécution
 }

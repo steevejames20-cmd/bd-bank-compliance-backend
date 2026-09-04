@@ -70,6 +70,13 @@ public class FrequencyConfig {
     @Column
     private LocalDateTime lastExecutionAt;
 
+    /**
+     * Date et heure calculée du prochain cycle d'exécution.
+     * Mise à jour à chaque modification de la configuration et après chaque exécution.
+     */
+    @Column
+    private LocalDateTime nextCycleAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

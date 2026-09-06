@@ -32,7 +32,7 @@ const demo = {
 const labels = { CRITICAL: 'Critique', HIGH: 'Haute', MEDIUM: 'Moyenne', LOW: 'Faible' }
 const demoUser = { username: 'admin', role: 'ADMIN' }
 const nav = [
-  { id: 'overview', label: 'Vue d’ensemble', icon: Gauge },&
+  { id: 'overview', label: 'Vue d’ensemble', icon: Gauge },
   { id: 'schema', label: 'Schéma & périmètre', icon: Database },
   { id: 'settings', label: 'Configuration', icon: Settings2 }
 ]

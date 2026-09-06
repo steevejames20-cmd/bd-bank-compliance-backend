@@ -7,6 +7,7 @@ import com.bridge.bdbank.persistence.FrequencyConfig.FrequencyType;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,9 +61,13 @@ public class FrequencyConfigService {
         // Désactiver toute autre configuration active
         frequencyConfigRepository.findByActiveTrue().ifPresent(existing -> {
             existing.setActive(false);
+            existing.setNextCycleAt(null);
             frequencyConfigRepository.save(existing);
             log.info("Configuration précédente (id: {}) désactivée", existing.getId());
         });
+
+        // Calculer et persister le prochain cycle avant sauvegarde
+        config.setNextCycleAt(computeNextCycleAt(config));
 
         FrequencyConfig saved = frequencyConfigRepository.save(config);
         log.info("Nouvelle configuration de fréquence créée (id: {}, type: {})", 
@@ -102,6 +107,9 @@ public class FrequencyConfigService {
         existing.setCronExpression(config.getCronExpression());
         existing.setActive(config.getActive());
 
+        // Recalculer et persister le prochain cycle
+        existing.setNextCycleAt(computeNextCycleAt(existing));
+
         FrequencyConfig saved = frequencyConfigRepository.save(existing);
         log.info("Configuration de fréquence mise à jour (id: {})", id);
         return saved;
@@ -130,6 +138,8 @@ public class FrequencyConfigService {
         });
 
         config.setActive(true);
+        // Recalculer le prochain cycle maintenant que la config est active
+        config.setNextCycleAt(computeNextCycleAt(config));
         FrequencyConfig saved = frequencyConfigRepository.save(config);
         log.info("Configuration de fréquence activée (id: {})", id);
         return saved;
@@ -169,14 +179,18 @@ public class FrequencyConfigService {
     }
 
     /**
-     * Met à jour la date de dernière exécution pour la configuration active.
+     * Met à jour la date de dernière exécution pour la configuration active
+     * et recalcule la date du prochain cycle.
      */
     @Transactional
     public void updateLastExecution() {
         frequencyConfigRepository.findByActiveTrue().ifPresent(config -> {
             config.setLastExecutionAt(LocalDateTime.now());
+            // Recalculer le prochain cycle en fonction de la nouvelle lastExecutionAt
+            config.setNextCycleAt(computeNextCycleAt(config));
             frequencyConfigRepository.save(config);
-            log.debug("Date de dernière exécution mise à jour pour la configuration (id: {})", config.getId());
+            log.debug("Dernière exécution et prochain cycle mis à jour pour la configuration (id: {}), nextCycleAt: {}",
+                config.getId(), config.getNextCycleAt());
         });
     }
 
@@ -276,6 +290,8 @@ public class FrequencyConfigService {
             existing.setIntervalMinutes(intervalMinutes);
             existing.setCronExpression(cronExpression);
             existing.setActive(true);
+            // Recalculer le prochain cycle avec la nouvelle configuration
+            existing.setNextCycleAt(computeNextCycleAt(existing));
             return frequencyConfigRepository.save(existing);
         } else {
             // Créer une nouvelle configuration
@@ -333,6 +349,51 @@ public class FrequencyConfigService {
         }
         
         return totalMinutes;
+    }
+
+    /**
+     * Calcule la date et l'heure du prochain cycle d'exécution pour une configuration donnée.
+     *
+     * <ul>
+     *   <li>Type INTERVAL : lastExecutionAt + intervalMinutes. Si aucune exécution précédente,
+     *       retourne now + intervalMinutes.</li>
+     *   <li>Type CRON : utilise {@link CronExpression} de Spring pour calculer la prochaine
+     *       occurrence à partir de maintenant.</li>
+     * </ul>
+     *
+     * @param config La configuration de fréquence active
+     * @return La date du prochain cycle, ou {@code null} si elle ne peut pas être déterminée
+     */
+    public LocalDateTime computeNextCycleAt(FrequencyConfig config) {
+        if (config == null || !Boolean.TRUE.equals(config.getActive())) {
+            return null;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        switch (config.getType()) {
+            case INTERVAL: {
+                LocalDateTime base = config.getLastExecutionAt() != null
+                    ? config.getLastExecutionAt()
+                    : now;
+                return base.plusMinutes(config.getIntervalMinutes());
+            }
+            case CRON: {
+                if (config.getCronExpression() == null || config.getCronExpression().isBlank()) {
+                    return null;
+                }
+                try {
+                    CronExpression cron = CronExpression.parse(config.getCronExpression());
+                    return cron.next(now);
+                } catch (IllegalArgumentException e) {
+                    log.warn("Impossible de calculer le prochain cycle pour l'expression cron '{}': {}",
+                        config.getCronExpression(), e.getMessage());
+                    return null;
+                }
+            }
+            default:
+                return null;
+        }
     }
 
     /**

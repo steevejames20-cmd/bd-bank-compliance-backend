@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -318,5 +319,96 @@ class FrequencyConfigServiceTest {
         String description = frequencyConfigService.getActiveConfigDescription();
 
         assertThat(description).isEqualTo("Aucune configuration active");
+    }
+
+    // =========================================================
+    // Tests pour computeNextCycleAt()
+    // =========================================================
+
+    @Test
+    void computeNextCycleAt_shouldReturnNullForNullConfig() {
+        assertThat(frequencyConfigService.computeNextCycleAt(null)).isNull();
+    }
+
+    @Test
+    void computeNextCycleAt_shouldReturnNullForInactiveConfig() {
+        FrequencyConfig config = FrequencyConfig.builder()
+            .id(1L)
+            .type(FrequencyType.INTERVAL)
+            .intervalMinutes(5)
+            .active(false)
+            .build();
+
+        assertThat(frequencyConfigService.computeNextCycleAt(config)).isNull();
+    }
+
+    @Test
+    void computeNextCycleAt_shouldReturnLastExecutionPlusInterval_whenLastExecutionPresent() {
+        LocalDateTime lastExecution = LocalDateTime.now().minusMinutes(2);
+        FrequencyConfig config = FrequencyConfig.builder()
+            .id(1L)
+            .type(FrequencyType.INTERVAL)
+            .intervalMinutes(10)
+            .active(true)
+            .lastExecutionAt(lastExecution)
+            .build();
+
+        LocalDateTime result = frequencyConfigService.computeNextCycleAt(config);
+
+        assertThat(result).isNotNull();
+        // Le prochain cycle = lastExecution + 10 min
+        assertThat(result).isEqualTo(lastExecution.plusMinutes(10));
+    }
+
+    @Test
+    void computeNextCycleAt_shouldReturnNowPlusInterval_whenNoLastExecution() {
+        LocalDateTime before = LocalDateTime.now();
+        FrequencyConfig config = FrequencyConfig.builder()
+            .id(1L)
+            .type(FrequencyType.INTERVAL)
+            .intervalMinutes(5)
+            .active(true)
+            .lastExecutionAt(null)
+            .build();
+
+        LocalDateTime result = frequencyConfigService.computeNextCycleAt(config);
+        LocalDateTime after = LocalDateTime.now();
+
+        assertThat(result).isNotNull();
+        // Le prochain cycle se situe entre now+5min (before) et now+5min (after)
+        assertThat(result).isBetween(before.plusMinutes(5), after.plusMinutes(5));
+    }
+
+    @Test
+    void computeNextCycleAt_shouldReturnNextOccurrenceForCron() {
+        // Expression cron : toutes les 5 minutes
+        FrequencyConfig config = FrequencyConfig.builder()
+            .id(1L)
+            .type(FrequencyType.CRON)
+            .cronExpression("0 */5 * * * *")
+            .active(true)
+            .build();
+
+        LocalDateTime before = LocalDateTime.now();
+        LocalDateTime result = frequencyConfigService.computeNextCycleAt(config);
+
+        assertThat(result).isNotNull();
+        assertThat(result).isAfter(before);
+        // La prochaine occurrence doit être au plus dans 5 minutes
+        assertThat(result).isBefore(before.plusMinutes(6));
+    }
+
+    @Test
+    void computeNextCycleAt_shouldReturnNullForInvalidCronExpression() {
+        FrequencyConfig config = FrequencyConfig.builder()
+            .id(1L)
+            .type(FrequencyType.CRON)
+            .cronExpression("invalid-cron")
+            .active(true)
+            .build();
+
+        LocalDateTime result = frequencyConfigService.computeNextCycleAt(config);
+
+        assertThat(result).isNull();
     }
 }

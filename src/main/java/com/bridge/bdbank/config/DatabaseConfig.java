@@ -1,5 +1,7 @@
 package com.bridge.bdbank.config;
 
+import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
@@ -62,15 +64,20 @@ public class DatabaseConfig {
      */
     @Bean
     public DataSource bankDataSource() {
-        String url = String.format("jdbc:mysql://%s:%s/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+        String url = String.format(
+                "jdbc:mysql://%s:%s/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
                 dbHost, dbPort, dbName);
 
-        return DataSourceBuilder.create()
+        HikariDataSource dataSource = DataSourceBuilder.create()
+                .type(HikariDataSource.class)
                 .url(url)
                 .username(dbUser)
                 .password(dbPassword)
                 .driverClassName("com.mysql.cj.jdbc.Driver")
                 .build();
+        dataSource.setPoolName("bd-bank-readonly");
+        dataSource.setReadOnly(true);
+        return dataSource;
     }
 
     /**
@@ -78,7 +85,7 @@ public class DatabaseConfig {
      * Utilisé par les services qui ne nécessitent pas JPA
      */
     @Bean
-    public JdbcTemplate bankJdbcTemplate() {
-        return new JdbcTemplate(bankDataSource());
+    public JdbcTemplate bankJdbcTemplate(@Qualifier("bankDataSource") DataSource bankDataSource) {
+        return new JdbcTemplate(bankDataSource);
     }
 }

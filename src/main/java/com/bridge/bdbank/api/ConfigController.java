@@ -110,6 +110,7 @@ public class ConfigController {
                 : null)
             .cronExpression(config.getCronExpression())
             .enabled(config.getActive().toString())
+            .nextCycleAt(frequencyConfigService.computeNextCycleAt(config))
             .build();
     }
 }

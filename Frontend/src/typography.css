@@ -1,0 +1,92 @@
+/* TYPOGRAPHIE SYSTEM - Classes CSS réutilisables */
+
+/* Base */
+body {
+  line-height: 1.6;
+}
+
+/* Titre de page (header principal) */
+.text-page-title {
+  font-size: 30px;
+  font-weight: 400;
+  color: var(--green);
+}
+
+/* Titre de section (cards de contenu) */
+.text-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Titre de formulaire */
+.text-form-title {
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--green);
+}
+
+/* Valeur de stat card (chiffre clé) */
+.text-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* Titre de stat card (label au-dessus du chiffre) */
+.text-stat-label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* Titre de section de navigation (sidebar) */
+.text-nav-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+/* En-têtes de tableau (th) */
+.text-table-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+/* Cellules de tableau (td) */
+.text-table-cell {
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+/* Onglets de filtre */
+.text-filter-tab {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Badges de statut */
+.text-badge {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Texte de bouton */
+.text-button {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Champs de recherche / inputs */
+.text-input {
+  font-size: 1rem;
+}
+
+/* Texte de contenu standard (paragraphes) */
+.text-content {
+  font-size: 18px;
+  line-height: 22px;
+}

@@ -39,9 +39,8 @@ class ScopeControllerTest {
     @Test
     void shouldGetScopeSuccessfullyWithAuth() throws Exception {
         List<TableInfo> tables = List.of(
-            new TableInfo("clients", "bd_bank_test"),
-            new TableInfo("comptes", "bd_bank_test")
-        );
+                new TableInfo("clients", "bd_bank_test"),
+                new TableInfo("comptes", "bd_bank_test"));
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
         when(scopeService.getScopedTables()).thenReturn(tables);
@@ -57,7 +56,7 @@ class ScopeControllerTest {
     void shouldGetScopeHandleUnknownScopedTableException() throws Exception {
         when(authenticationService.validateToken(anyString())).thenReturn(null);
         when(scopeService.getScopedTables())
-            .thenThrow(new com.bridge.bdbank.scope.UnknownScopedTableException("unknown_table"));
+                .thenThrow(new com.bridge.bdbank.scope.UnknownScopedTableException("unknown_table"));
 
         mockMvc.perform(get("/scope")
                 .header("Authorization", "Bearer valid-token")
@@ -75,7 +74,7 @@ class ScopeControllerTest {
     @Test
     void shouldFailGetScopeWithInvalidToken() throws Exception {
         when(authenticationService.validateToken("invalid-token"))
-            .thenThrow(new AuthenticationException("Token invalide"));
+                .thenThrow(new AuthenticationException("Token invalide"));
 
         mockMvc.perform(get("/scope")
                 .header("Authorization", "Bearer invalid-token")
@@ -105,7 +104,7 @@ class ScopeControllerTest {
     @Test
     void shouldFailUpdateScopeWithInvalidToken() throws Exception {
         when(authenticationService.validateToken("invalid-token"))
-            .thenThrow(new AuthenticationException("Token invalide"));
+                .thenThrow(new AuthenticationException("Token invalide"));
 
         mockMvc.perform(put("/scope")
                 .header("Authorization", "Bearer invalid-token")
@@ -136,7 +135,7 @@ class ScopeControllerTest {
     @Test
     void shouldFailCheckInScopeWithInvalidToken() throws Exception {
         when(authenticationService.validateToken("invalid-token"))
-            .thenThrow(new AuthenticationException("Token invalide"));
+                .thenThrow(new AuthenticationException("Token invalide"));
 
         mockMvc.perform(get("/scope/clients")
                 .header("Authorization", "Bearer invalid-token")

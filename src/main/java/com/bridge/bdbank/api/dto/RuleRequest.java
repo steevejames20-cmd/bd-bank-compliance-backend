@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 /**
  * DTO pour la création et mise à jour de règles.
  */
@@ -16,6 +18,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RuleRequest {
+
+    @NotBlank(message = "Le nom de la règle est obligatoire")
+    private String name;
+
+    private String description;
 
     @NotBlank(message = "Le texte DSL est obligatoire")
     private String dslText;
@@ -28,4 +35,10 @@ public class RuleRequest {
 
     @Builder.Default
     private Boolean active = true;
+
+    /**
+     * Adresses mail à notifier pour cette règle (facultatif).
+     */
+    @Builder.Default
+    private Set<String> notificationEmails = Set.of();
 }

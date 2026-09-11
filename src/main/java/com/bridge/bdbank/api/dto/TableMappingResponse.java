@@ -1,31 +1,28 @@
 package com.bridge.bdbank.api.dto;
 
-import com.bridge.bdbank.persistence.RuleSeverity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 /**
- * DTO pour la réponse contenant les informations d'une règle.
+ * DTO pour la réponse d'un mapping de renommage.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RuleResponse {
+public class TableMappingResponse {
 
     private Long id;
-    private String name;
+    private String originalTableName;
+    private String logicalTableName;
+    private String originalColumnName;
+    private String logicalColumnName;
     private String description;
-    private String dslText;
-    private String targetTable;
-    private RuleSeverity severity;
     private Boolean active;
-    private Set<String> notificationEmails;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

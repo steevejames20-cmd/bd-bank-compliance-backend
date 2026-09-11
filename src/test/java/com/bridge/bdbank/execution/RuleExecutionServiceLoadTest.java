@@ -40,6 +40,7 @@ class RuleExecutionServiceLoadTest {
 
         // 1. Créer une règle active
         Rule rule = Rule.builder()
+            .name("Montant eleve")
             .dslText("montant > 10000")
             .targetTable("transactions")
             .severity(RuleSeverity.MEDIUM)
@@ -85,6 +86,7 @@ class RuleExecutionServiceLoadTest {
 
         // 1. Créer plusieurs règles actives
         Rule rule1 = Rule.builder()
+            .name("Montant eleve")
             .dslText("montant > 10000")
             .targetTable("transactions")
             .severity(RuleSeverity.HIGH)
@@ -92,6 +94,7 @@ class RuleExecutionServiceLoadTest {
             .build();
 
         Rule rule2 = Rule.builder()
+            .name("Montant faible")
             .dslText("montant < 100")
             .targetTable("transactions")
             .severity(RuleSeverity.LOW)
@@ -99,6 +102,7 @@ class RuleExecutionServiceLoadTest {
             .build();
 
         Rule rule3 = Rule.builder()
+            .name("Montant intermediaire")
             .dslText("montant > 5000 AND montant < 8000")
             .targetTable("transactions")
             .severity(RuleSeverity.MEDIUM)

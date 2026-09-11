@@ -74,6 +74,17 @@
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
 
+        <!--
+            Envoi des notifications mail par règle, selon la gravité (V2).
+            NotificationService avale toute erreur SMTP pour ne jamais faire
+            échouer un cycle de vérification si la messagerie est
+            indisponible ou mal configurée (voir application.yml).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- JPA/Hibernate pour la persistance interne (J11) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

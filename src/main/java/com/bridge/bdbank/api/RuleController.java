@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Contrôleur REST pour la gestion des règles de conformité.
@@ -103,16 +105,19 @@ public class RuleController {
     })
     @PostMapping
     public ResponseEntity<RuleResponse> createRule(
-            @Parameter(description = "Détails de la règle à créer") @RequestBody RuleRequest request,
+            @Parameter(description = "Détails de la règle à créer") @Valid @RequestBody RuleRequest request,
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         authenticate(authHeader);
         
         Rule rule = Rule.builder()
+            .name(request.getName())
+            .description(request.getDescription())
             .dslText(request.getDslText())
             .targetTable(request.getTargetTable())
             .severity(request.getSeverity())
             .active(request.getActive())
+            .notificationEmails(safeEmails(request))
             .build();
         
         Rule savedRule = ruleRepository.save(rule);
@@ -134,17 +139,20 @@ public class RuleController {
     @PutMapping("/{id}")
     public ResponseEntity<RuleResponse> updateRule(
             @Parameter(description = "ID de la règle à mettre à jour") @PathVariable Long id,
-            @Parameter(description = "Détails de la règle à mettre à jour") @RequestBody RuleRequest request,
+            @Parameter(description = "Détails de la règle à mettre à jour") @Valid @RequestBody RuleRequest request,
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         authenticate(authHeader);
         
         return ruleRepository.findById(id)
             .map(rule -> {
+                rule.setName(request.getName());
+                rule.setDescription(request.getDescription());
                 rule.setDslText(request.getDslText());
                 rule.setTargetTable(request.getTargetTable());
                 rule.setSeverity(request.getSeverity());
                 rule.setActive(request.getActive());
+                rule.setNotificationEmails(safeEmails(request));
                 Rule updatedRule = ruleRepository.save(rule);
                 return ResponseEntity.ok(toResponse(updatedRule));
             })
@@ -224,15 +232,27 @@ public class RuleController {
     }
 
     /**
+     * Récupère les adresses de notification de la requête, jamais nulles
+     * (Jackson désérialise en null si le champ est absent du JSON, seul le
+     * pattern builder de Lombok applique la valeur par défaut).
+     */
+    private Set<String> safeEmails(RuleRequest request) {
+        return request.getNotificationEmails() != null ? request.getNotificationEmails() : Set.of();
+    }
+
+    /**
      * Convertit une entité Rule en DTO RuleResponse.
      */
     private RuleResponse toResponse(Rule rule) {
         return RuleResponse.builder()
             .id(rule.getId())
+            .name(rule.getName())
+            .description(rule.getDescription())
             .dslText(rule.getDslText())
             .targetTable(rule.getTargetTable())
             .severity(rule.getSeverity())
             .active(rule.getActive())
+            .notificationEmails(rule.getNotificationEmails())
             .createdAt(rule.getCreatedAt())
             .updatedAt(rule.getUpdatedAt())
             .build();

@@ -10,12 +10,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Gestionnaire global des exceptions pour standardiser les réponses d'erreur.
@@ -79,6 +81,29 @@ public class GlobalExceptionHandler {
         error.setPath(getPath(request));
         
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Gère les échecs de validation (@Valid) sur le corps d'une requête,
+     * ex: nom de règle manquant. Sans ce handler, l'exception tomberait
+     * dans le catch-all générique et renverrait un 500 au lieu d'un 400.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(
+            MethodArgumentNotValidException ex, WebRequest request) {
+
+        String message = ex.getBindingResult().getFieldErrors().stream()
+            .map(fieldError -> fieldError.getField() + " : " + fieldError.getDefaultMessage())
+            .collect(Collectors.joining(", "));
+
+        ErrorResponse error = new ErrorResponse();
+        error.setStatus(HttpStatus.BAD_REQUEST.value());
+        error.setMessage(message.isBlank() ? "Requête invalide" : message);
+        error.setErrorType("ValidationException");
+        error.setTimestamp(LocalDateTime.now());
+        error.setPath(getPath(request));
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     /**

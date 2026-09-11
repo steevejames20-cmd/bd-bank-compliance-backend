@@ -40,6 +40,16 @@ class DslParserServiceTest {
     }
 
     @Test
+    void devraitParserUneValeurChaineEntreApostrophes() {
+        // Convention SQL classique (simple guillemet), doit être équivalente aux doubles guillemets
+        ParsedRule result = parser.parse("nom == 'antoine'");
+
+        assertThat(result.condition().left()).isEqualTo(new ColumnOperand(null, "nom"));
+        assertThat(result.condition().operator()).isEqualTo(ComparisonOperator.EQ);
+        assertThat(result.condition().right()).isEqualTo(new LiteralOperand("antoine"));
+    }
+
+    @Test
     void devraitParserUneValeurDecimaleNegative() {
         ParsedRule result = parser.parse("solde < -100.50");
 

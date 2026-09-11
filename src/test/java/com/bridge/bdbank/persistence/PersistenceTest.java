@@ -32,6 +32,7 @@ class PersistenceTest {
     void devraitCreerEtRecupererUneRegle() {
         // Créer une règle
         Rule rule = Rule.builder()
+                .name("Age minimum client")
                 .dslText("age < 18")
                 .targetTable("clients")
                 .severity(RuleSeverity.MEDIUM)
@@ -59,6 +60,7 @@ class PersistenceTest {
     void devraitCreerEtRecupererUneAlerte() {
         // Créer une règle d'abord
         Rule rule = Rule.builder()
+                .name("Solde negatif")
                 .dslText("solde < 0")
                 .targetTable("comptes")
                 .severity(RuleSeverity.HIGH)
@@ -120,6 +122,7 @@ class PersistenceTest {
     void devraitTrouverLesReglesActives() {
         // Créer des règles actives et inactives
         Rule activeRule1 = Rule.builder()
+                .name("Age minimum client")
                 .dslText("age < 18")
                 .targetTable("clients")
                 .severity(RuleSeverity.LOW)
@@ -127,6 +130,7 @@ class PersistenceTest {
                 .build();
 
         Rule activeRule2 = Rule.builder()
+                .name("Solde negatif")
                 .dslText("solde < 0")
                 .targetTable("comptes")
                 .severity(RuleSeverity.MEDIUM)
@@ -134,6 +138,7 @@ class PersistenceTest {
                 .build();
 
         Rule inactiveRule = Rule.builder()
+                .name("Email obligatoire")
                 .dslText("email != null")
                 .targetTable("clients")
                 .severity(RuleSeverity.HIGH)
@@ -155,6 +160,7 @@ class PersistenceTest {
     void devraitTrouverLesAlertesParRegleEtStatut() {
         // Créer une règle
         Rule rule = Rule.builder()
+                .name("Regle de test")
                 .dslText("test")
                 .targetTable("test")
                 .severity(RuleSeverity.LOW)

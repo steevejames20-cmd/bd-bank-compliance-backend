@@ -122,6 +122,7 @@ class RuleControllerTest {
     @Test
     void shouldCreateRuleSuccessfullyWithAuth() throws Exception {
         RuleRequest request = new RuleRequest();
+        request.setName("Age minimum client");
         request.setDslText("age < 18");
         request.setTargetTable("clients");
         request.setSeverity(RuleSeverity.HIGH);
@@ -144,6 +145,7 @@ class RuleControllerTest {
     @Test
     void shouldFailCreateRuleWithoutAuth() throws Exception {
         RuleRequest request = new RuleRequest();
+        request.setName("Age minimum client");
         request.setDslText("age < 18");
         request.setTargetTable("clients");
         request.setSeverity(RuleSeverity.HIGH);
@@ -156,8 +158,26 @@ class RuleControllerTest {
     }
 
     @Test
+    void shouldFailCreateRuleWithoutName() throws Exception {
+        RuleRequest request = new RuleRequest();
+        request.setDslText("age < 18");
+        request.setTargetTable("clients");
+        request.setSeverity(RuleSeverity.HIGH);
+        request.setActive(true);
+
+        when(authenticationService.validateToken(anyString())).thenReturn(null);
+
+        mockMvc.perform(post("/rules")
+                .header("Authorization", "Bearer valid-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void shouldUpdateRuleSuccessfullyWithAuth() throws Exception {
         RuleRequest request = new RuleRequest();
+        request.setName("Age minimum client");
         request.setDslText("age < 21");
         request.setTargetTable("clients");
         request.setSeverity(RuleSeverity.MEDIUM);
@@ -182,6 +202,7 @@ class RuleControllerTest {
     @Test
     void shouldFailUpdateRuleWithoutAuth() throws Exception {
         RuleRequest request = new RuleRequest();
+        request.setName("Age minimum client");
         request.setDslText("age < 21");
         request.setTargetTable("clients");
         request.setSeverity(RuleSeverity.MEDIUM);

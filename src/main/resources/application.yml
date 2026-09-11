@@ -30,6 +30,25 @@ spring:
   # Cette datasource sera configurée manuellement via @Configuration
   # pour éviter les conflits avec la datasource principale H2
 
+  # Serveur SMTP utilisé pour les notifications par règle (V2). À renseigner
+  # via .env (MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD). Si le
+  # serveur n'est pas configuré/joignable, NotificationService logue
+  # l'échec sans jamais interrompre l'exécution des règles.
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:25}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
+        connectiontimeout: 5000
+        timeout: 5000
+        writetimeout: 5000
+
 server:
   port: ${SERVER_PORT:8080}
 
@@ -40,6 +59,11 @@ bdbank:
   setup-key: ${BDBANK_SETUP_KEY:}
   scope:
     tables: ${BDBANK_SCOPE_TABLES:clients,comptes,transactions}
+  notifications:
+    # Coupe-circuit global : permet de désactiver l'envoi de mails (ex. en
+    # environnement de test) sans toucher au code ni à la config SMTP.
+    enabled: ${BDBANK_NOTIFICATIONS_ENABLED:true}
+    from: ${BDBANK_NOTIFICATIONS_FROM:bridge-compliance@bdbank.local}
 
 logging:
   level:

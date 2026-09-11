@@ -1,8 +1,11 @@
 package com.bridge.bdbank.api;
 
+import com.bridge.bdbank.api.dto.AlertGroupResponse;
 import com.bridge.bdbank.api.dto.AlertResponse;
 import com.bridge.bdbank.auth.AuthenticationException;
 import com.bridge.bdbank.auth.AuthenticationService;
+import com.bridge.bdbank.execution.AlertHistoryService;
+import com.bridge.bdbank.execution.AlertHistoryService.AlertGroup;
 import com.bridge.bdbank.persistence.Alert;
 import com.bridge.bdbank.persistence.AlertRepository;
 import com.bridge.bdbank.persistence.AlertStatus;
@@ -20,6 +23,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * Contrôleur REST pour la gestion des alertes.
  * Fournit les endpoints pour lister et consulter les alertes.
@@ -33,6 +38,7 @@ public class AlertController {
 
     private final AlertRepository alertRepository;
     private final AuthenticationService authenticationService;
+    private final AlertHistoryService alertHistoryService;
 
     private static final int DEFAULT_PAGE_SIZE = 25;
 
@@ -65,6 +71,31 @@ public class AlertController {
         }
         
         Page<AlertResponse> response = alerts.map(this::toResponse);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Liste les alertes regroupées par règle liée, avec le décompte
+     * d'alertes actives par groupe (une même anomalie détectée sur
+     * plusieurs cycles n'est comptée qu'une fois).
+     * GET /alerts/grouped?status=ACTIVE
+     */
+    @Operation(summary = "Lister les alertes regroupées par règle",
+        description = "Regroupe les alertes par règle liée, avec le nombre d'alertes actives par groupe")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Groupes d'alertes récupérés avec succès"),
+        @ApiResponse(responseCode = "401", description = "Non authentifié"),
+        @ApiResponse(responseCode = "500", description = "Erreur interne du serveur")
+    })
+    @GetMapping("/grouped")
+    public ResponseEntity<List<AlertGroupResponse>> listAlertsGroupedByRule(
+            @Parameter(description = "Filtre par statut d'alerte") @RequestParam(required = false) AlertStatus status,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        authenticate(authHeader);
+
+        List<AlertGroup> groups = alertHistoryService.getAlertsGroupedByRule(status);
+        List<AlertGroupResponse> response = groups.stream().map(this::toGroupResponse).toList();
         return ResponseEntity.ok(response);
     }
 
@@ -126,6 +157,20 @@ public class AlertController {
             .violatingEntityId(alert.getViolatingEntityId())
             .involvedColumns(alert.getInvolvedColumns())
             .consecutiveDetections(alert.getConsecutiveDetections())
+            .build();
+    }
+
+    /**
+     * Convertit un groupe d'alertes (règle + alertes liées) en DTO AlertGroupResponse.
+     */
+    private AlertGroupResponse toGroupResponse(AlertGroup group) {
+        return AlertGroupResponse.builder()
+            .ruleId(group.ruleId())
+            .ruleName(group.ruleName())
+            .ruleSeverity(group.ruleSeverity())
+            .activeCount(group.activeCount())
+            .totalCount(group.totalCount())
+            .alerts(group.alerts().stream().map(this::toResponse).toList())
             .build();
     }
 }

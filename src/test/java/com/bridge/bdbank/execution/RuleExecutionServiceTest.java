@@ -3,6 +3,7 @@ package com.bridge.bdbank.execution;
 import com.bridge.bdbank.dsl.DslParserService;
 import com.bridge.bdbank.dsl.ParsedCondition;
 import com.bridge.bdbank.dsl.ParsedRule;
+import com.bridge.bdbank.notification.NotificationService;
 import com.bridge.bdbank.persistence.Alert;
 import com.bridge.bdbank.persistence.AlertRepository;
 import com.bridge.bdbank.persistence.AlertStatus;
@@ -52,12 +53,15 @@ class RuleExecutionServiceTest {
     @Mock
     private DataSource bankDataSource;
 
+    @Mock
+    private NotificationService notificationService;
+
     private RuleExecutionService ruleExecutionService;
 
     @BeforeEach
     void setUp() {
         ruleExecutionService = new RuleExecutionService(
-            ruleRepository, alertRepository, dslParserService, ruleTranslator, bankDataSource);
+            ruleRepository, alertRepository, dslParserService, ruleTranslator, bankDataSource, notificationService);
     }
 
     @Test

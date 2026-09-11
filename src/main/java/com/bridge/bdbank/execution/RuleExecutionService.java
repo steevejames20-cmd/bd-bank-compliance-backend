@@ -2,6 +2,7 @@ package com.bridge.bdbank.execution;
 
 import com.bridge.bdbank.dsl.DslParserService;
 import com.bridge.bdbank.dsl.ParsedRule;
+import com.bridge.bdbank.notification.NotificationService;
 import com.bridge.bdbank.persistence.Alert;
 import com.bridge.bdbank.persistence.AlertRepository;
 import com.bridge.bdbank.persistence.AlertStatus;
@@ -40,18 +41,21 @@ public class RuleExecutionService {
     private final DslParserService dslParserService;
     private final RuleTranslator ruleTranslator;
     private final DataSource bankDataSource;
+    private final NotificationService notificationService;
 
     public RuleExecutionService(
             RuleRepository ruleRepository,
             AlertRepository alertRepository,
             DslParserService dslParserService,
             RuleTranslator ruleTranslator,
-            @Qualifier("bankDataSource") DataSource bankDataSource) {
+            @Qualifier("bankDataSource") DataSource bankDataSource,
+            NotificationService notificationService) {
         this.ruleRepository = ruleRepository;
         this.alertRepository = alertRepository;
         this.dslParserService = dslParserService;
         this.ruleTranslator = ruleTranslator;
         this.bankDataSource = bankDataSource;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -187,7 +191,11 @@ public class RuleExecutionService {
         int alertsGenerated = 0;
 
         for (String entityId : violatingEntities) {
-            // Vérifier si une alerte existe déjà pour cette combinaison règle/entité
+            // Vérifier si une alerte existe déjà pour cette combinaison règle/entité.
+            // C'est ce qui évite de recompter une même anomalie détectée à
+            // plusieurs cycles : on met à jour la ligne existante au lieu
+            // d'en créer une nouvelle, donc le nombre d'alertes actives
+            // n'augmente pas artificiellement.
             alertRepository.findByRuleIdAndViolatingEntityId(rule.getId(), entityId)
                 .ifPresentOrElse(
                     existingAlert -> {
@@ -196,8 +204,12 @@ public class RuleExecutionService {
                         if (existingAlert.getStatus() == AlertStatus.RESOLVED) {
                             existingAlert.setStatus(AlertStatus.ACTIVE);
                             existingAlert.setResolvedAt(null);
+                            alertRepository.save(existingAlert);
+                            // Réactivation d'une anomalie déjà connue : on notifie à nouveau.
+                            notificationService.notifyAlertTriggered(rule, existingAlert);
+                        } else {
+                            alertRepository.save(existingAlert);
                         }
-                        alertRepository.save(existingAlert);
                     },
                     () -> {
                         // Création d'une nouvelle alerte
@@ -208,7 +220,9 @@ public class RuleExecutionService {
                             .consecutiveDetections(1)
                             .involvedColumns(query.involvedColumns())
                             .build();
-                        alertRepository.save(alert);
+                        Alert savedAlert = alertRepository.save(alert);
+                        // Nouvelle anomalie : notification immédiate.
+                        notificationService.notifyAlertTriggered(rule, savedAlert);
                     }
                 );
             alertsGenerated++;

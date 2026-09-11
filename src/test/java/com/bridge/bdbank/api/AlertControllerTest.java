@@ -3,6 +3,7 @@ package com.bridge.bdbank.api;
 import com.bridge.bdbank.api.dto.AlertResponse;
 import com.bridge.bdbank.auth.AuthenticationException;
 import com.bridge.bdbank.auth.AuthenticationService;
+import com.bridge.bdbank.execution.AlertHistoryService;
 import com.bridge.bdbank.persistence.Alert;
 import com.bridge.bdbank.persistence.AlertRepository;
 import com.bridge.bdbank.persistence.AlertStatus;
@@ -40,6 +41,9 @@ class AlertControllerTest {
 
     @MockBean
     private AuthenticationService authenticationService;
+
+    @MockBean
+    private AlertHistoryService alertHistoryService;
 
     @Test
     void shouldListAlertsWithoutAuth() throws Exception {

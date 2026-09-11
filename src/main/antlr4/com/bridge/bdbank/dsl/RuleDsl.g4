@@ -83,7 +83,10 @@ DOT : '.' ;
 
 BOOLEAN : 'true' | 'false' ;
 NUMBER  : '-'? DIGIT+ ('.' DIGIT+)? ;
-STRING  : '"' (~["\r\n])* '"' ;
+// Chaîne entre guillemets doubles OU simples (ex: "FR" ou 'antoine') -
+// les deux styles sont acceptés pour rester naturel quelle que soit
+// l'habitude de l'utilisateur (SQL utilise plutôt le simple guillemet).
+STRING  : '"' (~["\r\n])* '"' | '\'' (~['\r\n])* '\'' ;
 IDENTIFIER : LETTER (LETTER | DIGIT | '_')* ;
 
 fragment DIGIT  : [0-9] ;

@@ -38,6 +38,7 @@ class RuleExecutionServiceIntegrationTest {
 
         // 1. Créer une règle active
         Rule rule = Rule.builder()
+            .name("Solde insuffisant")
             .dslText("solde < 100")
             .targetTable("comptes")
             .severity(RuleSeverity.HIGH)

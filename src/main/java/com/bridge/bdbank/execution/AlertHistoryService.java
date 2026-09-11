@@ -5,6 +5,7 @@ import com.bridge.bdbank.persistence.AlertRepository;
 import com.bridge.bdbank.persistence.AlertStatus;
 import com.bridge.bdbank.persistence.Rule;
 import com.bridge.bdbank.persistence.RuleRepository;
+import com.bridge.bdbank.persistence.RuleSeverity;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +14,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Service pour la consultation de l'historique des alertes.
@@ -163,6 +168,61 @@ public class AlertHistoryService {
 
         return new GlobalAlertStatistics(activeCount, resolvedCount, totalCount, rulesWithActiveAlerts);
     }
+
+    /**
+     * Regroupe les alertes par règle liée, avec le décompte d'alertes
+     * actives par groupe. Un même couple (règle, entité en anomalie) ne
+     * correspond qu'à une seule ligne d'alerte (voir RuleExecutionService),
+     * donc ce décompte ne se gonfle jamais en recomptant une alerte déjà
+     * vue à un cycle précédent.
+     *
+     * @param status filtre optionnel (null pour regrouper toutes les alertes, actives et résolues)
+     * @return un groupe par règle concernée, triés par nombre d'alertes actives décroissant
+     */
+    public List<AlertGroup> getAlertsGroupedByRule(AlertStatus status) {
+        List<Alert> alerts = status == null
+            ? alertRepository.findAll()
+            : alertRepository.findByStatus(status, Pageable.unpaged()).getContent();
+
+        Map<Long, List<Alert>> alertsByRuleId = alerts.stream()
+            .collect(Collectors.groupingBy(Alert::getRuleId));
+
+        List<AlertGroup> groups = new ArrayList<>();
+        for (Map.Entry<Long, List<Alert>> entry : alertsByRuleId.entrySet()) {
+            Long ruleId = entry.getKey();
+            List<Alert> ruleAlerts = entry.getValue();
+            Rule rule = ruleRepository.findById(ruleId).orElse(null);
+
+            long activeCount = ruleAlerts.stream()
+                .filter(alert -> alert.getStatus() == AlertStatus.ACTIVE)
+                .count();
+
+            groups.add(new AlertGroup(
+                ruleId,
+                rule != null ? rule.getName() : null,
+                rule != null ? rule.getSeverity() : null,
+                activeCount,
+                ruleAlerts.size(),
+                ruleAlerts
+            ));
+        }
+
+        groups.sort(Comparator.comparingLong(AlertGroup::activeCount).reversed());
+        log.debug("Regroupement de {} alerte(s) en {} groupe(s) de règle(s)", alerts.size(), groups.size());
+        return groups;
+    }
+
+    /**
+     * Un groupe d'alertes rattachées à une même règle.
+     */
+    public record AlertGroup(
+        Long ruleId,
+        String ruleName,
+        RuleSeverity ruleSeverity,
+        long activeCount,
+        long totalCount,
+        List<Alert> alerts
+    ) {}
 
     /**
      * Record pour les statistiques d'alertes d'une règle.

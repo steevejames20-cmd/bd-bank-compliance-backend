@@ -7,6 +7,7 @@ import com.bridge.bdbank.auth.AuthenticationService;
 import com.bridge.bdbank.persistence.Rule;
 import com.bridge.bdbank.persistence.RuleRepository;
 import com.bridge.bdbank.persistence.RuleSeverity;
+import com.bridge.bdbank.scope.ScopeService;
 import com.bridge.bdbank.validation.RuleValidationService;
 import com.bridge.bdbank.validation.ValidationResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +46,9 @@ class RuleControllerTest {
 
     @MockBean
     private RuleValidationService ruleValidationService;
+
+    @MockBean
+    private ScopeService scopeService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -131,6 +135,8 @@ class RuleControllerTest {
         Rule savedRule = createRule(1L, "age < 18", "clients", RuleSeverity.HIGH);
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
+        when(ruleValidationService.validate(anyString(), anyString())).thenReturn(ValidationResult.ok());
+        when(scopeService.isInScope(anyString())).thenReturn(true);
         when(ruleRepository.save(any(Rule.class))).thenReturn(savedRule);
 
         mockMvc.perform(post("/rules")
@@ -187,6 +193,8 @@ class RuleControllerTest {
         Rule updatedRule = createRule(1L, "age < 21", "clients", RuleSeverity.MEDIUM);
 
         when(authenticationService.validateToken(anyString())).thenReturn(null);
+        when(ruleValidationService.validate(anyString(), anyString())).thenReturn(ValidationResult.ok());
+        when(scopeService.isInScope(anyString())).thenReturn(true);
         when(ruleRepository.findById(1L)).thenReturn(Optional.of(existingRule));
         when(ruleRepository.save(any(Rule.class))).thenReturn(updatedRule);
 

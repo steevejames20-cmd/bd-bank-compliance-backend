@@ -11,11 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -180,16 +182,20 @@ public class AlertHistoryService {
      * @return un groupe par règle concernée, triés par nombre d'alertes actives décroissant
      */
     public List<AlertGroup> getAlertsGroupedByRule(AlertStatus status) {
+        Sort byDetectionDateDesc = Sort.by(Sort.Direction.DESC, "detectedAt");
         List<Alert> alerts = status == null
-            ? alertRepository.findAll()
-            : alertRepository.findByStatus(status, Pageable.unpaged()).getContent();
+            ? alertRepository.findAll(byDetectionDateDesc)
+            : alertRepository.findByStatus(status, Pageable.unpaged(byDetectionDateDesc)).getContent();
 
         Map<Long, List<Alert>> alertsByRuleId = alerts.stream()
-            .collect(Collectors.groupingBy(Alert::getRuleId));
+            .collect(Collectors.groupingBy(Alert::getRuleId, LinkedHashMap::new, Collectors.toList()));
 
         List<AlertGroup> groups = new ArrayList<>();
         for (Map.Entry<Long, List<Alert>> entry : alertsByRuleId.entrySet()) {
             Long ruleId = entry.getKey();
+            // Les alertes de chaque groupe restent triées par date de
+            // détection décroissante (héritée du tri de la requête ci-dessus,
+            // groupingBy préservant l'ordre d'origine dans chaque liste).
             List<Alert> ruleAlerts = entry.getValue();
             Rule rule = ruleRepository.findById(ruleId).orElse(null);
 

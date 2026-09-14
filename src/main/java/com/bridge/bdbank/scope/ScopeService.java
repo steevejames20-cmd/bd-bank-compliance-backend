@@ -51,11 +51,7 @@ public class ScopeService {
                 .map(TableInfo::name)
                 .collect(Collectors.toSet());
 
-        List<String> declaredScope = scopeRepository == null
-            ? scopeProperties.getTables()
-            : scopeRepository.findByActiveTrue()
-                .map(scope -> scope.getTables().stream().toList())
-                .orElse(scopeProperties.getTables());
+        List<String> declaredScope = currentDeclaredScope();
 
         for (String tableName : declaredScope) {
             if (!allTableNames.contains(tableName)) {
@@ -99,10 +95,24 @@ public class ScopeService {
     }
 
     /**
-     * Utile plus tard (semaines 2-3) pour vérifier rapidement si une table
-     * référencée par une règle DSL fait bien partie du périmètre autorisé.
+     * Le périmètre réellement actif : celui enregistré en base par
+     * l'administrateur (PUT /scope) s'il existe, sinon la valeur par
+     * défaut déclarée en configuration (bdbank.scope.tables).
+     */
+    private List<String> currentDeclaredScope() {
+        return scopeRepository == null
+            ? scopeProperties.getTables()
+            : scopeRepository.findByActiveTrue()
+                .map(scope -> scope.getTables().stream().toList())
+                .orElse(scopeProperties.getTables());
+    }
+
+    /**
+     * Vérifie qu'une table fait bien partie du périmètre actuellement actif
+     * (persisté si l'administrateur l'a défini, sinon la configuration par
+     * défaut) - utilisé pour interdire la création de règles hors périmètre.
      */
     public boolean isInScope(String tableName) {
-        return scopeProperties.getTables().contains(tableName);
+        return currentDeclaredScope().contains(tableName);
     }
 }

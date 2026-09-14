@@ -6,6 +6,7 @@ import com.bridge.bdbank.auth.AuthenticationException;
 import com.bridge.bdbank.auth.AuthenticationService;
 import com.bridge.bdbank.persistence.Rule;
 import com.bridge.bdbank.persistence.RuleRepository;
+import com.bridge.bdbank.scope.ScopeService;
 import com.bridge.bdbank.validation.RuleValidationService;
 import com.bridge.bdbank.validation.ValidationResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,6 +42,7 @@ public class RuleController {
     private final RuleRepository ruleRepository;
     private final AuthenticationService authenticationService;
     private final RuleValidationService ruleValidationService;
+    private final ScopeService scopeService;
 
     private static final int DEFAULT_PAGE_SIZE = 25;
 
@@ -109,6 +111,7 @@ public class RuleController {
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         authenticate(authHeader);
+        assertRuleIsValid(request);
         
         Rule rule = Rule.builder()
             .name(request.getName())
@@ -143,6 +146,7 @@ public class RuleController {
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         authenticate(authHeader);
+        assertRuleIsValid(request);
         
         return ruleRepository.findById(id)
             .map(rule -> {
@@ -236,6 +240,24 @@ public class RuleController {
      * (Jackson désérialise en null si le champ est absent du JSON, seul le
      * pattern builder de Lombok applique la valeur par défaut).
      */
+    /**
+     * Vérifie qu'une règle est réellement enregistrable : DSL syntaxiquement
+     * et sémantiquement valide (table/colonnes existantes, via
+     * RuleValidationService qui interroge la vraie bd_bank), et table cible
+     * bien comprise dans le périmètre de surveillance actuel.
+     * Sans ce garde-fou, une règle invalide pouvait être créée silencieusement.
+     */
+    private void assertRuleIsValid(RuleRequest request) {
+        ValidationResult validation = ruleValidationService.validate(request.getDslText(), request.getTargetTable());
+        if (!validation.valid()) {
+            throw new IllegalArgumentException(validation.errorMessage());
+        }
+        if (!scopeService.isInScope(request.getTargetTable())) {
+            throw new IllegalArgumentException(
+                "La table '" + request.getTargetTable() + "' n'est pas dans le périmètre de surveillance (Schéma & Périmètre)");
+        }
+    }
+
     private Set<String> safeEmails(RuleRequest request) {
         return request.getNotificationEmails() != null ? request.getNotificationEmails() : Set.of();
     }

@@ -1,101 +1,144 @@
-# bd-bank-compliance-backend
+# Bridge Control - BD Bank Compliance Backend
 
-Bridge bd_bank est un outil interne qui vérifie des règles métier sur des
-données bancaires sans exposer la base au frontend.
+## Overview
 
-Backend Java (Spring Boot) qui traduit des règles métier écrites en DSL en
-requêtes SQL, les exécute en lecture seule sur la base d'une banque
-(bd_bank), et génère des alertes en cas d'anomalie détectée.
+Bridge Control is an internal compliance monitoring tool designed to verify business rules on banking data without exposing the database to the frontend. This Java Spring Boot backend translates business rules written in a Domain Specific Language (DSL) into SQL queries, executes them in read-only mode on the bank database (bd_bank), and generates alerts when anomalies are detected.
 
-Le projet expose une API REST pour gérer les règles, les alertes, le schéma,
-le périmètre et la fréquence d'analyse. Le détail des routes est disponible
-dans Swagger après le démarrage du backend, à l'adresse
-`http://localhost:8080/swagger-ui.html`.
+The project exposes a REST API for managing rules, alerts, schema, scope, and analysis frequency. API documentation is available via Swagger at `http://localhost:8080/swagger-ui.html` after backend startup.
 
-## Démarrage local (J1)
+## Key Features
 
-> **Sous Windows (PowerShell)** : partout où tu vois `set -a; source .env; set +a`
-> (syntaxe bash), utilise à la place `.\scripts\load-env.ps1`. Le reste des
-> commandes (`docker`, `mvn`, `git`) est identique.
+- **DSL Rule Engine**: Write business rules in a simple domain-specific language that translates to SQL
+- **Read-Only Database Access**: Secure connection to banking databases with SELECT-only permissions
+- **Real-Time Alert Generation**: Automatic detection and reporting of compliance violations
+- **Schema Introspection**: Automatic discovery of database tables and columns
+- **Logical Renaming**: Customize table and column names for better readability in the interface
+- **Scheduled Execution**: Configurable frequency for rule execution (interval or cron expressions)
+- **Authentication & Authorization**: Secure admin access with session management
+- **Multi-Database Support**: Compatible with MySQL and PostgreSQL
 
-1. Copier `.env.example` en `.env` et ajuster les valeurs si besoin :
+## Prerequisites
+
+- Java 17 or higher
+- Maven 3.6+
+- Docker and Docker Compose
+- Node.js 18+ (for frontend development)
+
+## Local Setup
+
+### Environment Configuration
+
+1. Copy `.env.example` to `.env` and adjust values if needed:
 
    ```bash
    cp .env.example .env
    ```
 
-2. Lancer la base de test locale (MySQL, avec un jeu de données de départ) :
+   **Note for Windows (PowerShell)**: Wherever you see `set -a; source .env; set +a` (bash syntax), use `.\scripts\load-env.ps1` instead. Other commands (`docker`, `mvn`, `git`) remain the same.
+
+### Database Setup
+
+2. Start the local test database (MySQL with initial dataset):
 
    ```bash
    docker compose up -d
    ```
 
-3. Charger les variables d'environnement dans le shell, puis lancer l'application :
+### Backend Startup
+
+3. Load environment variables and start the application:
 
    ```bash
+   # Linux/Mac
    set -a; source .env; set +a
+   mvn spring-boot:run
+
+   # Windows PowerShell
+   .\scripts\load-env.ps1
    mvn spring-boot:run
    ```
 
-4. Vérifier que tout compile et que le contexte Spring démarre (= la connexion
-   à la base de test est valide) :
+### Verification
+
+4. Verify compilation and Spring context startup (validates database connection):
 
    ```bash
    mvn clean compile
    mvn test
    ```
 
-> Le compte MySQL utilisé ici (`DB_USER`/`DB_PASSWORD`) est le compte technique
-> dédié à l'application. Il est limité à la lecture (`SELECT`) sur la base de
-> test et ne doit pas être utilisé pour modifier les données.
+**Security Note**: The MySQL account used (`DB_USER`/`DB_PASSWORD`) is a dedicated technical account for the application. It is restricted to read-only access (`SELECT`) on the test database and must not be used to modify data.
 
-## J2 — Compte lecture seule + couche de connexion JDBC
+## Security Architecture
 
-Le compte applicatif est maintenant réellement en lecture seule (`GRANT
-SELECT` explicite dans `db/init/002_create_readonly_user.sh`), et une
-couche `JdbcConnectionService` générique (MySQL/PostgreSQL) vérifie la
-connexion au démarrage.
+### Read-Only Database Access
 
-1. Réinitialiser la base de test pour que les nouveaux scripts d'init
-   s'exécutent (ils ne tournent qu'au premier démarrage d'un volume vide) :
+The application account is strictly read-only with explicit `GRANT SELECT` permissions defined in `db/init/002_create_readonly_user.sh`. A generic `JdbcConnectionService` layer (MySQL/PostgreSQL compatible) validates the connection at startup.
+
+To verify the read-only restrictions:
+
+1. Reset the test database to ensure new init scripts run (they only execute on first startup of an empty volume):
 
    ```bash
    docker compose down -v
    docker compose up -d
    ```
 
-2. Vérifier que le compte est bien restreint au SELECT :
+2. Verify the account is restricted to SELECT:
 
    ```bash
-   # OK
+   # Should work
    docker exec -it bd-bank-test-db mysql -u bdbank_readonly -p"change_me" bd_bank_test -e "SELECT * FROM clients;"
 
-   # Doit être refusé (ERROR 1142 : INSERT command denied)
+   # Should be denied (ERROR 1142 : INSERT command denied)
    docker exec -it bd-bank-test-db mysql -u bdbank_readonly -p"change_me" bd_bank_test -e "INSERT INTO clients (nom, email) VALUES ('test','test@test.com');"
    ```
 
-3. Lancer l'app et vérifier dans les logs la ligne `Connexion bd_bank OK -> MySQL ...` :
+3. Start the application and verify the log line `Connexion bd_bank OK -> MySQL ...`:
 
    ```bash
    set -a; source .env; set +a
    mvn spring-boot:run
    ```
 
-4. Lancer les tests (nécessite la base de test démarrée) :
+4. Run tests (requires test database running):
 
    ```bash
    mvn test
    ```
 
-## Workflow Git
+## Project Structure
 
-Une branche par journée de travail de la roadmap, nommée `jour-XX-slug`
-(ex. `jour-01-init-projet`, `jour-02-connexion-jdbc`). Chaque branche est
-mergée dans `main` une fois l'objectif du jour validé.
+```
+bd-bank-compliance-backend/
+├── src/main/java/com/bridge/bdbank/
+│   ├── api/              # REST controllers and DTOs
+│   ├── auth/             # Authentication and session management
+│   ├── config/           # Spring configuration (CORS, datasources)
+│   ├── connection/       # JDBC connection service
+│   ├── dsl/              # DSL parsing with ANTLR4
+│   ├── execution/        # Rule execution and scheduling
+│   ├── introspection/    # Database schema introspection
+│   ├── mapping/          # Logical renaming of tables/columns
+│   ├── persistence/      # JPA entities and repositories
+│   ├── scope/            # Scope management
+│   ├── translation/      # DSL to SQL translation
+│   └── validation/       # Rule validation service
+├── src/main/resources/
+│   └── application.yml   # Spring Boot configuration
+├── src/test/            # Unit and integration tests
+├── db/init/             # Database initialization scripts
+├── Frontend/             # React frontend application
+└── pom.xml              # Maven configuration
+```
 
-## Démarrage du frontend
+## Git Workflow
 
-Dans un second terminal, depuis le dossier `Frontend` :
+Branches are organized by development milestones, named `jour-XX-slug` (e.g., `jour-01-init-projet`, `jour-02-connexion-jdbc`). Each branch is merged into `main` once the day's objective is validated.
+
+## Frontend Setup
+
+In a separate terminal, from the `Frontend` directory:
 
 ```powershell
 cd Frontend
@@ -103,34 +146,74 @@ npm install
 npm run dev
 ```
 
-Le frontend est disponible sur `http://127.0.0.1:5173`. Pour utiliser l'API
-réelle, `Frontend/.env` doit contenir `VITE_API_URL=http://localhost:8080` et
-`VITE_DEMO_MODE=false`.
-
-En mode réel, le dashboard recharge les tables, le périmètre, les règles, les
-alertes et la fréquence depuis l'API. La posture de contrôle est calculée à
-partir du taux de règles actives, de la couverture du périmètre et du taux
-d'alertes résolues. Le bouton d'actualisation force un nouveau chargement.
-
-Depuis le détail d'une alerte, le bouton de statut permet de la marquer comme
-résolue ou de la réactiver automatiquement selon les cycles d'analyse. Pour
-activer ou désactiver une règle, utilisez l'action correspondante dans la liste
-des règles ; elle met à jour la règle via `PUT /rules/{id}`.
-
-## Initialisation du compte administrateur
-
-Le projet est prévu pour un seul administrateur. Si aucun utilisateur n'existe
-encore, définir une clé privée dans `.env` :
-
-```env
-BDBANK_SETUP_KEY=une-valeur-longue-et-secrete
+The frontend is available at `http://127.0.0.1:5173`. To use the real API, ensure `Frontend/.env` contains:
+```
+VITE_API_URL=http://localhost:8080
+VITE_DEMO_MODE=false
 ```
 
-Redémarrer Spring Boot, puis ouvrir directement `http://127.0.0.1:5173/setup`.
-Le formulaire demande cette clé, un identifiant valide et un mot de passe d'au
-moins 12 caractères. L'endpoint `/auth/setup` est refusé dès qu'un compte
-existe et n'est pas affiché dans la navigation.
+In production mode, the dashboard reloads tables, scope, rules, alerts, and frequency from the API. The control posture is calculated from the active rule rate, scope coverage, and resolved alert rate. The refresh button forces a new data load.
 
-Après l'initialisation, se connecter sur `http://127.0.0.1:5173/`. Les routes
-protégées utilisent le token Bearer retourné par `/auth/login`; une session est
-invalidée au logout et expire après 15 minutes sans activité.
+From an alert detail view, the status button allows marking it as resolved or automatically reactivating it based on analysis cycles. To activate or deactivate a rule, use the corresponding action in the rules list; it updates the rule via `PUT /rules/{id}`.
+
+## Administrator Setup
+
+The project is designed for a single administrator. If no user exists yet, define a private key in `.env`:
+
+```env
+BDBANK_SETUP_KEY=a-long-and-secret-value
+```
+
+Restart Spring Boot, then open `http://127.0.0.1:5173/setup`. The form requires this key, a valid username, and a password of at least 12 characters. The `/auth/setup` endpoint is denied once an account exists and is not shown in navigation.
+
+After initialization, log in at `http://127.0.0.1:5173/`. Protected routes use the Bearer token returned by `/auth/login`; sessions are invalidated on logout and expire after 15 minutes of inactivity.
+
+## API Documentation
+
+Once the backend is running, access the Swagger UI at:
+```
+http://localhost:8080/swagger-ui.html
+```
+
+This provides interactive documentation for all REST endpoints including:
+- Authentication (`/auth/*`)
+- Rules management (`/rules/*`)
+- Alerts management (`/alerts/*`)
+- Schema introspection (`/schema/*`)
+- Scope configuration (`/scope/*`)
+- Frequency configuration (`/config/frequency`)
+- Logical renaming (`/mappings/*`)
+
+## DSL Rule Syntax
+
+Business rules are written in a simple domain-specific language that supports:
+
+- **Comparisons**: `column < value`, `column > value`, `column = value`, `column != value`
+- **Logical operators**: `AND`, `OR`
+- **Null checks**: `column IS NULL`, `column IS NOT NULL`
+- **Aggregations**: `COUNT(column)`, `SUM(column)`, `AVG(column)`, `MAX(column)`, `MIN(column)`
+
+Examples:
+```
+solde < 0 AND decouvert_autorise = false
+montant > 10000
+email IS NULL
+COUNT(transactions) > 200
+```
+
+## Testing
+
+Run the test suite with:
+```bash
+mvn test
+```
+
+Tests require the test database to be running via Docker Compose. The test suite includes:
+- Unit tests for service layers
+- Integration tests for controllers
+- DSL parsing and translation tests
+- Database connection tests
+
+## License
+
+Internal project - BD Bank Compliance Tool
